@@ -1,31 +1,82 @@
-// src/app/api/save/route.ts
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { supabase } from '../../../lib/supabase';
 
-// Helper to generate a short 8-character ID (like "A9X-22B")
-function generateCode() {
-  return Math.random().toString(36).substring(2, 10).toUpperCase();
-}
+const generateCode = () => {
+  const part = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${part()}-${part()}-${part()}`;
+};
 
 export async function POST(req: Request) {
+  const cookieStore = await cookies();
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Ignored in API routes
+          }
+        },
+      },
+    }
+  );
+
   try {
     const body = await req.json();
+
+    // Check if user is logged in
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Check for business email (simple verification logic)
+    const FREE_EMAIL_PROVIDERS = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com'];
+    let isOrgVerified = false;
+    let orgName = body.organization_name;
+
+    if (user && user.email) {
+      const emailDomain = user.email.split('@')[1].toLowerCase();
+      if (!FREE_EMAIL_PROVIDERS.includes(emailDomain)) {
+        isOrgVerified = true;
+        if (!orgName || orgName.trim() === "") {
+            orgName = emailDomain; 
+        }
+      }
+      
+      // Update profile silently
+      await supabase
+        .from('profiles')
+        .update({ 
+          organization_name: orgName,
+          is_org_verified: isOrgVerified 
+        })
+        .eq('id', user.id);
+    }
+
+    // Generate Code
     const verificationCode = generateCode();
 
-    // Insert into Supabase
+    // Insert Certificate
     const { data, error } = await supabase
       .from('certificates')
       .insert([
         {
-          recipient_name: body.recipient_name_placeholder, // From the AI or Input
-          course_title: body.course_title,
+          recipient_name: body.recipient_name_placeholder,
+          course_title: body.certificate_title,
           organization_name: body.organization_name,
-          issue_date: new Date().toISOString(),
           verification_code: verificationCode,
           theme: body.design_theme,
           theme_color: body.theme_color,
-          // We store the full "action text" so we don't lose the AI's writing
-          course_title: body.action_text 
+          issue_date: new Date().toISOString(),
+          issuer_id: user ? user.id : null
         }
       ])
       .select()
@@ -33,10 +84,10 @@ export async function POST(req: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, id: data.id, code: verificationCode });
+    return NextResponse.json({ success: true, code: data.verification_code });
 
-  } catch (error) {
-    console.error('Save Error:', error);
-    return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
+  } catch (error: any) {
+    console.error("Save Error:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

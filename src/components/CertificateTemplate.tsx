@@ -118,16 +118,19 @@ export const CertificateTemplate = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-end border-t border-slate-300 pt-6 mt-10">
+{/* Footer */}
+        <div className="flex justify-between items-end border-t border-slate-300 pt-6 mt-10 relative">
           <div className="text-left">
             <p className="text-lg font-semibold text-slate-700 font-serif">{new Date().toLocaleDateString()}</p>
             <p className="text-xs text-slate-400 uppercase tracking-wider">Date</p>
           </div>
           
+          {/* QR Code - UPDATED: Moved up (bottom-20) and Larger (w-24) */}
           {data.qrCodeData && (
-            <div className="absolute bottom-8 right-8 flex flex-col items-center bg-white p-2 rounded border border-gray-200 shadow-sm">
-               <img src={data.qrCodeData} alt="QR" className="w-16 h-16" />
-               <span className="text-[10px] text-slate-400 font-mono mt-1">VERIFY</span>
+            <div className="absolute bottom-20 right-0 flex flex-col items-center bg-white p-2 rounded-xl border border-gray-200 shadow-md">
+               {/* Increased size from w-16 to w-24 */}
+               <img src={data.qrCodeData} alt="QR" className="w-24 h-24" />
+               <span className="text-[10px] text-slate-500 font-bold font-mono mt-1 tracking-wider">SCAN TO VERIFY</span>
             </div>
           )}
 
