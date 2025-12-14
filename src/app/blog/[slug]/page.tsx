@@ -16,12 +16,17 @@ interface Props {
 // 1. Dynamic SEO
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const { data: post } = await supabase.from("posts").select("title, excerpt").eq("slug", slug).single();
+  const { data: post } = await supabase.from("posts").select("title, excerpt, cover_image").eq("slug", slug).single();
+  
   if (!post) return { title: "Article Not Found" };
   
   return {
     title: post.title,
     description: post.excerpt,
+    // Optional: Add OpenGraph image so the picture shows up when shared on Twitter/Facebook
+    openGraph: {
+      images: post.cover_image ? [post.cover_image] : [],
+    }
   };
 }
 
@@ -59,9 +64,19 @@ export default async function BlogPost({ params }: Props) {
         </div>
       </div>
 
+      {/* NEW: Cover Image Section */}
+      {post.cover_image && (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-12 relative z-10">
+          <img 
+            src={post.cover_image} 
+            alt={post.title}
+            className="w-full h-[400px] object-cover rounded-2xl shadow-xl border-4 border-white bg-slate-100"
+          />
+        </div>
+      )}
+
       {/* Content */}
       <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
-        {/* The 'prose' class comes from @tailwindcss/typography */}
         <div className="prose prose-lg prose-slate prose-headings:font-bold prose-a:text-blue-600 hover:prose-a:text-blue-800 mx-auto">
           <ReactMarkdown>
             {post.content}

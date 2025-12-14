@@ -1,150 +1,184 @@
-import React from 'react';
+"use client";
 
-export const CertificateTemplate = ({ 
-  data, 
-  id, 
-  customColor, 
-  customLogo,
-  frameStyle // <--- NEW PROP
-}: { 
-  data: any, 
-  id: string, 
-  customColor?: string, 
-  customLogo?: string,
-  frameStyle?: string
-}) => {
+import { BadgeCheck, Calendar, Award, Star, Feather, Crown, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import QRCode from "qrcode"; 
+
+interface CertificateTemplateProps {
+  data: any;
+  customColor: string;
+  frameStyle: string;
+  customLogo?: string;
+  textureStyle?: string;
+  designTheme?: "Modern" | "Classic" | "Playful" | "Minimal" | "Gothic"; 
+}
+
+export function CertificateTemplate({ data, customColor, frameStyle, customLogo, designTheme = "Modern", textureStyle = "None" }: CertificateTemplateProps) {
+  const [demoQr, setDemoQr] = useState<string>("");
+
+  useEffect(() => {
+    if (data?.qrCodeData) return;
+    const code = data?.verification_code || "DEMO";
+    const domain = typeof window !== 'undefined' ? window.location.origin : 'https://onlinecertificate.org';
+    const url = `${domain}/verify/${code}`;
+    QRCode.toDataURL(url, { margin: 2 }).then(setDemoQr).catch(console.error);
+  }, [data?.verification_code, data?.qrCodeData]); 
+
+  const qrCodeToDisplay = data?.qrCodeData || demoQr;
   if (!data) return null;
 
-  const primaryColor = customColor || data.theme_color || '#000000';
+  // --- THEME CONFIG ---
+  const themeStyles = {
+      Modern: { fontTitle: "font-sans tracking-tight", fontBody: "font-sans", icon: Award, bgPattern: "opacity-[0.03]" },
+      Classic: { fontTitle: "font-serif tracking-widest uppercase", fontBody: "font-serif", icon: Feather, bgPattern: "opacity-[0.05]" },
+      Playful: { fontTitle: "font-sans font-black tracking-wide", fontBody: "font-sans", icon: Star, bgPattern: "opacity-[0.1]" },
+      Minimal: { fontTitle: "font-mono uppercase tracking-[0.2em]", fontBody: "font-mono text-sm", icon: BadgeCheck, bgPattern: "hidden" },
+      Gothic: { fontTitle: "font-serif font-black tracking-tighter", fontBody: "font-serif italic", icon: Crown, bgPattern: "opacity-[0.08]" }
+  };
+  const currentTheme = themeStyles[designTheme] || themeStyles.Modern;
+  const ThemeIcon = currentTheme.icon;
+  const signature = data.signature_text || "";
+  const PARCHMENT_URL = "https://www.transparenttextures.com/patterns/cream-paper.png";
 
-  // 1. BASE THEMES (Layout & Fonts only)
-  const themes: any = {
-    Modern: {
-      container: "p-12 bg-white text-left flex flex-col justify-between font-sans", // Removed border here
-      title: "text-5xl font-extrabold mb-2 uppercase tracking-tight",
-      org: "text-xl text-slate-500 mb-8 uppercase tracking-widest font-semibold",
-      recipient: "text-6xl font-bold text-black mb-6",
-      text: "text-xl text-slate-600 leading-relaxed max-w-2xl",
-    },
-    Ivy: {
-      container: "p-12 pt-16 bg-[#fffbf0] text-center font-serif flex flex-col justify-between",
-      title: "text-4xl mb-6 underline decoration-1 underline-offset-4 italic",
-      org: "text-2xl mb-4 font-bold",
-      recipient: "text-6xl italic mb-6 text-slate-900",
-      text: "text-xl px-12 leading-loose",
-    },
-    Playful: {
-      container: "bg-blue-50 p-12 text-center rounded-3xl flex flex-col justify-between font-sans",
-      title: "text-6xl font-black mb-4 drop-shadow-sm",
-      org: "text-2xl font-bold mb-8",
-      recipient: "text-5xl font-bold mb-6 underline decoration-wavy decoration-opacity-50",
-      text: "text-xl font-medium",
-    },
-    Minimal: {
-      container: "p-16 bg-white text-center flex flex-col justify-between font-sans",
-      title: "text-2xl uppercase tracking-[0.5em] text-slate-400 mb-12",
-      org: "text-sm font-bold uppercase tracking-widest text-slate-300 mb-12",
-      recipient: "text-5xl font-light text-slate-800 mb-8",
-      text: "text-base text-slate-500 font-light",
-    },
-    Gothic: {
-      container: "p-12 bg-[#fdfbf7] text-center flex flex-col justify-between",
-      title: "text-6xl mb-8 font-['UnifrakturMaguntia'] tracking-wide", 
-      org: "text-lg font-bold uppercase tracking-[0.3em] mb-8 font-serif text-slate-600",
-      recipient: "text-7xl mb-8 font-['UnifrakturMaguntia']",
-      text: "text-2xl italic font-serif px-16 leading-loose text-slate-700",
+  // --- RENDER HELPERS ---
+
+  // 1. TEXTURE LAYER (Background)
+  const renderTexture = () => {
+    if (textureStyle === 'Gold') {
+      return (
+        <div className="absolute inset-0 bg-gradient-to-br from-yellow-600 via-yellow-200 to-yellow-600 p-6">
+            <div className="w-full h-full bg-white shadow-inner"></div>
+        </div>
+      );
     }
+    if (textureStyle === 'Parchment') {
+      return (
+        <div className="absolute inset-0 bg-[#fffbf0]" 
+             style={{ backgroundImage: `url("${PARCHMENT_URL}")`, boxShadow: 'inset 0 0 120px rgba(139, 69, 19, 0.15)' }}>
+        </div>
+      );
+    }
+    if (textureStyle === 'Guilloche') {
+       return (
+         <div className="absolute inset-0 bg-slate-50 p-4">
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+            <div className="w-full h-full border-[8px] border-double border-slate-300 bg-white"></div>
+         </div>
+       );
+    }
+    // Standard / None
+    return <div className="absolute inset-0 bg-white"></div>;
   };
 
-  const currentTheme = themes[data.design_theme || 'Modern'] || themes.Modern;
+  // 2. FRAME LAYER (Borders) - Now Enabled for ALL textures
+  // We add 'pointer-events-none' so you can still click text behind the frame
+  const renderFrame = () => {
+    if (frameStyle === 'None') return null;
 
-  // 2. FRAME LOGIC (Overrides Theme Defaults)
-  // If user hasn't selected a frame, we use the theme's "Natural" look
-  const selectedFrame = frameStyle || 'Default';
+    // Adjust frame inset based on texture (Gold needs to be inside the gold border)
+    const insetClass = textureStyle === 'Gold' ? 'inset-10' : textureStyle === 'Guilloche' ? 'inset-8' : 'inset-4';
 
-  const getFrameClasses = () => {
-    switch (selectedFrame) {
-      case 'Thick': return `border-[14px] border-solid`;
-      case 'Double': return `border-[20px] border-double`;
-      case 'Dashed': return `border-[6px] border-dashed rounded-3xl`;
-      case 'Gold': return `border-[16px] border-solid border-[#cfb53b]`; // Fallback color
-      case 'None': return `border-0`;
-      default: 
-        // Default Logic based on Theme
-        if (data.design_theme === 'Modern') return `border-[12px] border-solid`;
-        if (data.design_theme === 'Ivy') return `border-4 border-double`;
-        if (data.design_theme === 'Playful') return `border-4 border-dashed rounded-3xl`;
-        if (data.design_theme === 'Gothic') return `border-[20px] border-double`;
-        return `border-0`;
-    }
+    return (
+      <div className={`absolute pointer-events-none z-20 ${insetClass}
+          ${frameStyle === 'Thick' ? 'border-[16px]' : 
+            frameStyle === 'Double' ? 'border-4' : 
+            frameStyle === 'Dashed' ? 'border-4 border-dashed' : 
+            'border-8 border-double' /* Default */
+          }`}
+          style={{ borderColor: customColor }}
+      >
+          {/* For Double Frame, add the second inner line */}
+          {frameStyle === 'Double' && (
+             <div className="absolute inset-2 border-2 pointer-events-none" style={{ borderColor: customColor }}></div>
+          )}
+      </div>
+    );
   };
 
   return (
-    <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap');`}</style>
+    // ROOT CONTAINER - FIXED SIZE 1123x794
+    // We removed 'w-full' to prevent the shrinking bug
+    <div className={`w-[1123px] h-[794px] relative bg-white shadow-2xl overflow-hidden flex flex-col ${currentTheme.fontBody}`}>
+      
+      {/* LAYER 1: TEXTURE */}
+      {renderTexture()}
 
-      <div 
-        id={id} 
-        className={`w-[1123px] h-[794px] relative shadow-2xl overflow-hidden ${currentTheme.container} ${getFrameClasses()}`}
-        style={{ 
-          // If Gold, we use a fancy gradient. Otherwise use primaryColor.
-          borderColor: selectedFrame === 'Gold' ? '#eec147' : primaryColor, 
-          borderImage: selectedFrame === 'Gold' ? 'linear-gradient(to bottom, #cfb53b, #fbf5b7, #aa8628, #fbf5b7, #cfb53b) 1' : undefined
-        }}
-      >
-        
-        {/* Content */}
-        <div className="flex-1 flex flex-col justify-center relative z-10">
-          
-          <div className="flex justify-center mb-6">
-             {customLogo ? (
-               <img src={customLogo} alt="Logo" className="h-24 object-contain" />
-             ) : (
-               <h3 className={currentTheme.org}>{data.organization_name}</h3>
-             )}
-          </div>
+      {/* LAYER 2: FRAME (Now works everywhere) */}
+      {renderFrame()}
 
-          <h1 className={currentTheme.title} style={{ color: primaryColor }}>
-            {data.certificate_title || "Certificate of Achievement"}
-          </h1>
-          
-          {data.design_theme !== 'Minimal' && <p className="text-slate-400 text-sm mb-4 font-serif italic">is hereby awarded to</p>}
-          
-          <h2 className={currentTheme.recipient} style={{ color: primaryColor }}>
-             {data.recipient_name_placeholder}
-          </h2>
-          
-          <p className={currentTheme.text}>{data.action_text}</p>
-        </div>
-
-        {/* Footer */}
-{/* Footer */}
-        <div className="flex justify-between items-end border-t border-slate-300 pt-6 mt-10 relative">
-          <div className="text-left">
-            <p className="text-lg font-semibold text-slate-700 font-serif">{new Date().toLocaleDateString()}</p>
-            <p className="text-xs text-slate-400 uppercase tracking-wider">Date</p>
-          </div>
-          
-          {/* QR Code - UPDATED: Moved up (bottom-20) and Larger (w-24) */}
-          {data.qrCodeData && (
-            <div className="absolute bottom-20 right-0 flex flex-col items-center bg-white p-2 rounded-xl border border-gray-200 shadow-md">
-               {/* Increased size from w-16 to w-24 */}
-               <img src={data.qrCodeData} alt="QR" className="w-24 h-24" />
-               <span className="text-[10px] text-slate-500 font-bold font-mono mt-1 tracking-wider">SCAN TO VERIFY</span>
-            </div>
-          )}
-
-          <div className="text-right">
-            <p className="text-lg font-semibold text-slate-700 font-serif">OnlineCertificate.org</p>
-            <p className="text-xs text-slate-400 uppercase tracking-wider">Verified Issuer</p>
-          </div>
-        </div>
-        
-        {/* Inner Border Decoration for Double/Gothic frames */}
-        {(selectedFrame === 'Double' || data.design_theme === 'Gothic') && selectedFrame !== 'Thick' && selectedFrame !== 'None' && selectedFrame !== 'Dashed' && (
-          <div className="absolute inset-4 border border-slate-400 pointer-events-none opacity-30" />
-        )}
+      {/* LAYER 3: WATERMARK ICON */}
+      <div className={`absolute inset-0 pointer-events-none flex items-center justify-center z-0 ${currentTheme.bgPattern}`}>
+         <ThemeIcon size={600} color={customColor} />
       </div>
-    </>
+
+      {/* LAYER 4: CONTENT */}
+      {/* Added z-30 to ensure text sits above everything else */}
+      <div className="relative z-30 w-full h-full flex flex-col items-center justify-between py-16 px-20">
+        
+        {/* TOP: Logo & Title */}
+        <div className="w-full flex flex-col items-center">
+            {customLogo ? (
+                <img src={customLogo} alt="Logo" className="h-24 mb-6 object-contain" />
+            ) : (
+                <div className="mb-6"><ThemeIcon className="w-20 h-20" style={{ color: customColor }} /></div>
+            )}
+
+            <h2 className={`text-2xl font-bold mb-2 text-slate-500 ${designTheme === 'Minimal' ? 'text-xs uppercase tracking-[0.3em]' : 'uppercase tracking-widest'}`}>
+                {data.organization_name || "Organization Name"}
+            </h2>
+            
+            <h1 className={`text-6xl font-extrabold mb-4 ${currentTheme.fontTitle}`} style={{ color: customColor }}>
+                {data.certificate_title || "Certificate of Appreciation"}
+            </h1>
+        </div>
+
+        {/* MIDDLE: Recipient */}
+        <div className="w-full flex flex-col items-center justify-center flex-grow">
+            <p className="text-xl text-slate-600 mb-4 italic">is hereby awarded to</p>
+            <div className="border-b-2 border-slate-300 w-full max-w-2xl mb-8 pb-2 text-center">
+                <p className={`text-5xl font-bold text-slate-900 ${designTheme === 'Gothic' ? 'font-serif' : 'font-sans'}`}>
+                    {data.recipient_name_placeholder || "Recipient Name"}
+                </p>
+            </div>
+            <p className="text-xl text-slate-600 max-w-3xl leading-relaxed text-center">
+                {data.action_text || "For outstanding performance and dedication."}
+            </p>
+        </div>
+
+        {/* BOTTOM: Footer */}
+        <div className="w-full flex justify-between items-end mt-4">
+            {/* Date */}
+            <div className="text-center">
+                <div className="flex items-center gap-2 text-slate-400 mb-2 justify-center uppercase text-xs font-bold tracking-wider"><Calendar size={14} /> Date</div>
+                <p className="text-xl font-bold border-b border-slate-300 pb-1 px-4 min-w-[200px]">{data.issue_date || new Date().toLocaleDateString()}</p>
+            </div>
+
+            {/* Seal */}
+            <div className="relative group -mb-4">
+                <div className="absolute -inset-4 rounded-full opacity-10 blur-xl group-hover:opacity-20 transition-opacity" style={{ backgroundColor: customColor }}></div>
+                <div className="bg-white p-2 rounded-lg border shadow-sm relative z-10">
+                    {qrCodeToDisplay ? <img src={qrCodeToDisplay} alt="QR" className="w-24 h-24" /> : <div className="w-24 h-24 bg-slate-50 flex items-center justify-center text-[10px]">Loading...</div>}
+                </div>
+                <div className="text-[10px] font-bold text-center mt-2 uppercase tracking-wider text-slate-400">Verified</div>
+            </div>
+
+            {/* Signature */}
+            <div className="text-center">
+                <div className="text-slate-400 mb-2 justify-center uppercase text-xs font-bold tracking-wider">Authorized Signature</div>
+                <p className="text-2xl border-b border-slate-300 pb-1 px-4 min-w-[200px]" style={{ fontFamily: signature ? 'cursive' : 'inherit' }}>
+                    {signature || <span className="opacity-0">Sign Here</span>}
+                </p>
+            </div>
+        </div>
+
+        {/* Verification Footer */}
+        <div className="absolute bottom-4 w-full text-center">
+            <p className="text-[10px] text-slate-400 uppercase tracking-widest">
+                Verification ID: {data.verification_code || "PREVIEW"}
+            </p>
+        </div>
+
+      </div>
+    </div>
   );
-};
+}

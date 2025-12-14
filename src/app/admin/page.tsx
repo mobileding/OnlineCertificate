@@ -1,9 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-// Import the new Client Component
+import Link from 'next/link'; // Import Link
+import { FileText, Search, Users, ArrowRight } from 'lucide-react'; // Import Icons
+
+// Import the Client Component for the user row
 import { AdminUserRow } from '../../components/AdminUserRow';
-import { createPost } from "../actions/admin"; // Import the new action
 
 export default async function AdminPage() {
   const cookieStore = await cookies();
@@ -20,68 +22,96 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  // UPDATED QUERY: Fetch profiles AND the count of their certificates
-  // Note: 'certificates(count)' relies on the foreign key we set up earlier
+  // Fetch profiles with certificate counts
   const { data: profiles, error } = await supabase
     .from('profiles')
     .select('*, certificates(count)', { count: 'exact' }) 
     .order('created_at', { ascending: false });
 
+  // Get some quick stats (optional, but looks nice)
+  const { count: templateCount } = await supabase.from('templates').select('*', { count: 'exact', head: true });
+  const { count: blogCount } = await supabase.from('posts').select('*', { count: 'exact', head: true });
+
   return (
     <main className="min-h-screen bg-slate-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-8">
         
+        {/* HEADER */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Admin Console</h1>
-            <p className="text-slate-500">Master User List</p>
+            <p className="text-slate-500">System Overview</p>
           </div>
-          <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm text-sm font-medium">
-             Total Users: {profiles?.length || 0}
+          <div className="flex gap-3">
+             <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm text-sm font-medium flex items-center gap-2">
+                <Users size={16} className="text-slate-400" />
+                {profiles?.length || 0} Users
+             </div>
           </div>
         </div>
 
+        {/* SECTION 1: MANAGEMENT LINKS (New) */}
+        <div className="grid md:grid-cols-2 gap-6">
+            
+            {/* SEO Template Manager Card */}
+            <Link href="/admin/seotemplate" className="group block bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                        <Search size={24} />
+                    </div>
+                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                        {templateCount || 0} Pages
+                    </span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">SEO Template Manager</h3>
+                <p className="text-slate-500 text-sm mb-4">Create and manage programmatic landing pages (e.g. "Best Dad Certificate").</p>
+                <div className="text-blue-600 text-sm font-bold flex items-center group-hover:underline">
+                    Manage Templates <ArrowRight size={16} className="ml-1" />
+                </div>
+            </Link>
 
+            {/* Blog Manager Card */}
+            <Link href="/admin/blog" className="group block bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-purple-300 transition-all">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
+                        <FileText size={24} />
+                    </div>
+                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                        {blogCount || 0} Posts
+                    </span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-purple-600 transition-colors">Blog Manager</h3>
+                <p className="text-slate-500 text-sm mb-4">Write articles, manage drafts, and publish content to the blog.</p>
+                <div className="text-purple-600 text-sm font-bold flex items-center group-hover:underline">
+                    Manage Blog <ArrowRight size={16} className="ml-1" />
+                </div>
+            </Link>
 
-{/* SECTION 1: WRITE A POST */}
-      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <h2 className="text-xl font-bold text-slate-900 mb-4">Write New Article</h2>
-        <form action={createPost} className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <input name="title" required placeholder="Article Title" className="w-full p-2 border rounded" />
-            <input name="excerpt" required placeholder="Short summary (for SEO)" className="w-full p-2 border rounded" />
-          </div>
-          <textarea name="content" required placeholder="Write in Markdown (# Heading, **Bold**)..." className="w-full p-2 border rounded h-32 font-mono text-sm" />
-          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">
-            Publish Post
-          </button>
-        </form>
-      </div>
+        </div>
 
-
-
-
-
-
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs">User / Email</th>
-                {/* NEW COLUMN */}
-                <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs text-center">Certs Created</th>
-                <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs w-64">Org Name (Editable)</th>
-                <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs">Identity</th>
-                {/* MERGED COLUMN (Status + Action) */}
-                <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs text-right">Business Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {profiles?.map((profile) => (
-                <AdminUserRow key={profile.id} profile={profile} />
-              ))}
-            </tbody>
-          </table>
+        {/* SECTION 2: USER TABLE (Existing) */}
+        <div>
+            <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <Users size={20} /> Master User List
+            </h2>
+            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs">User / Email</th>
+                    <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs text-center">Certs Created</th>
+                    <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs w-64">Org Name (Editable)</th>
+                    <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs">Identity</th>
+                    <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs text-right">Business Status</th>
+                </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                {profiles?.map((profile) => (
+                    <AdminUserRow key={profile.id} profile={profile} />
+                ))}
+                </tbody>
+            </table>
+            </div>
         </div>
 
       </div>

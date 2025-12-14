@@ -1,12 +1,13 @@
 import { Generator } from "../components/Generator";
-// FIX: Use relative path instead of @
 import { HomeContent } from "../components/HomeContent"; 
 
 export default function HomePage() {
   return (
-    <main>
+    <main className="bg-slate-50 min-h-screen">
+      {/* 1. The Tool */}
       <Generator />
-      {/* Add the marketing content below the tool */}
+      
+      {/* 2. The Marketing Specs */}
       <HomeContent />
     </main>
   );

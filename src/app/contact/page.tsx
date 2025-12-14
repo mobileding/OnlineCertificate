@@ -1,6 +1,17 @@
+"use client"; // Needs to be a client component for onClick
+
+import { useState } from "react";
 import { Mail, MessageSquare, MapPin } from "lucide-react";
 
+
+
 export default function ContactPage() {
+  const [showEmail, setShowEmail] = useState(false);
+  
+  // 1. Break the email into parts so it doesn't appear in the source code
+  const user = "support";
+  const domain = "onlinecertificate.org";
+  const email = `${user}@${domain}`;
   return (
     <main className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto space-y-12">
@@ -17,7 +28,7 @@ export default function ContactPage() {
         <div className="grid md:grid-cols-2 gap-6">
           
           {/* Email Support */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center hover:shadow-md transition-shadow">
+<div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center hover:shadow-md transition-shadow">
             <div className="bg-blue-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
               <Mail className="text-blue-600 w-6 h-6" />
             </div>
@@ -25,12 +36,23 @@ export default function ContactPage() {
             <p className="text-slate-500 text-sm mb-6">
               For general inquiries, account issues, or partnership opportunities.
             </p>
-            <a 
-              href="mailto:support@onlinecertificate.org" 
-              className="text-blue-600 font-bold hover:underline"
-            >
-              support@onlinecertificate.org
-            </a>
+            
+            {/* 2. LOGIC: Only show mailto link if clicked */}
+            {!showEmail ? (
+                <button 
+                    onClick={() => setShowEmail(true)}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-blue-700 transition-colors"
+                >
+                    Reveal Email Address
+                </button>
+            ) : (
+                <a 
+                    href={`mailto:${email}`} 
+                    className="text-blue-600 font-bold hover:underline block animate-in fade-in"
+                >
+                    {email}
+                </a>
+            )}
           </div>
 
           {/* Quick FAQ / Help */}

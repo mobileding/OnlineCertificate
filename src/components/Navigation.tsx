@@ -44,17 +44,17 @@ const handleLogout = async () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
+<a href="/" className="flex items-center gap-2">
           <span className="text-xl font-extrabold text-slate-900 tracking-tight">
             OnlineCertificate<span className="text-blue-600">.org</span>
           </span>
-        </Link>
+        </a>
 
         {/* Menu Items */}
         <div className="flex items-center gap-6">
-          <Link href="/" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5">
+          <a href="/" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5">
             <Home size={16} /> <span className="hidden sm:inline">Home</span>
-          </Link>
+          </a>
           
 {/* NEW LINK */}
   <Link href="/blog" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5">
