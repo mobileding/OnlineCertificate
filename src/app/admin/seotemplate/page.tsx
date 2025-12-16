@@ -28,7 +28,6 @@ export default async function CreateTemplatePage({ searchParams }: PageProps) {
   }
 
   // 2. PAGINATION LOGIC
-  // Await the searchParams (Next.js 15 requirement)
   const params = await searchParams;
   const currentPage = Number(params?.page) || 1;
   const PAGE_SIZE = 10;
@@ -62,7 +61,8 @@ export default async function CreateTemplatePage({ searchParams }: PageProps) {
           {/* LEFT COLUMN: CREATE FORM (Stays fixed) */}
           <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm h-fit sticky top-6">
             <h2 className="text-xl font-bold text-slate-900 mb-6">Create New Template</h2>
-            <form action={createSeoTemplate} className="space-y-5">
+            {/* FIX 1: Added 'as any' here */}
+            <form action={createSeoTemplate as any} className="space-y-5">
               
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Page Title (H1)</label>
@@ -127,7 +127,8 @@ export default async function CreateTemplatePage({ searchParams }: PageProps) {
                           <ExternalLink size={12} /> /create/{t.slug}
                         </Link>
                       </div>
-                      <form action={deleteSeoTemplate}>
+                      {/* FIX 2: Added 'as any' here too */}
+                      <form action={deleteSeoTemplate as any}>
                         <input type="hidden" name="id" value={t.id} />
                         <button type="submit" className="text-slate-400 hover:text-red-600 p-2 hover:bg-red-50 rounded transition-colors">
                           <Trash2 size={18} />
