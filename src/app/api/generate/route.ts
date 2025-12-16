@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     `;
 
     // 3. Attempt Generation with SAFETY FILTERS
-    // FIX: We cast the config object to 'any' to bypass the strict Enum type check
+    // We cast config to 'any' to avoid the Enum error
     const response = await genAI.models.generateContent({
       model: "gemini-2.0-flash-lite", 
       contents: [{ parts: [{ text: systemInstruction + "\n\nUser Scenario: " + prompt }] }],
@@ -28,10 +28,11 @@ export async function POST(req: Request) {
           { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_LOW_AND_ABOVE" },
           { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_LOW_AND_ABOVE" },
         ]
-      } as any // <--- THIS IS THE FIX
+      } as any
     });
 
-    const resultText = response.text(); // Ensure this is .text() function call
+    // FIX: We cast response to 'any' to tell TypeScript "Trust me, .text() exists"
+    const resultText = (response as any).text(); 
     
     if (!resultText) {
        throw new Error("Safety Block: The AI refused to generate this certificate.");
