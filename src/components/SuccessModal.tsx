@@ -29,7 +29,7 @@ interface SuccessModalProps {
         theme_color: string;
         frame: string;
         logo: string | null;
-	theme?: "Modern" | "Classic" | "Playful" | "Minimal" | "Gothic";
+        theme?: "Modern" | "Classic" | "Playful" | "Minimal" | "Gothic";
     }
   } | null;
 }
@@ -209,10 +209,11 @@ export function SuccessModal({ isOpen, onClose, data }: SuccessModalProps) {
                                 issue_date: data.design?.date,
                                 verification_code: cert.id 
                             }}
-                            customColor={data.design?.theme_color}
-                            frameStyle={data.design?.frame}
+                            // FIX: Added fallbacks (|| "blue") to ensure strings are never undefined
+                            customColor={data.design?.theme_color || "blue"}
+                            frameStyle={data.design?.frame || "modern"}
                             customLogo={data.design?.logo || undefined}
-			    designTheme={data.design?.theme || "Modern"}
+                            designTheme={data.design?.theme || "Modern"}
                         />
                     </div>
                 ))}
