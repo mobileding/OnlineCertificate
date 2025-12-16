@@ -45,7 +45,8 @@ export async function saveCertificate(data: any, isBulk = false) {
     }
 
     // Insert Data
-    let query = supabaseAdmin.from('certificates').insert(data).select('id, verification_code');
+    // FIX 1: Added ': any' type definition here
+    let query: any = supabaseAdmin.from('certificates').insert(data).select('id, verification_code');
     
     // IMPORTANT: Only use .single() if it is NOT a bulk operation
     if (!isBulk) {
@@ -77,7 +78,8 @@ export async function saveCertificate(data: any, isBulk = false) {
   }
 
   // Insert Data
-  let query = supabase.from('certificates').insert(finalData).select('id, verification_code');
+  // FIX 2: Added ': any' type definition here as well
+  let query: any = supabase.from('certificates').insert(finalData).select('id, verification_code');
 
   // IMPORTANT: Only use .single() if it is NOT a bulk operation
   if (!isBulk) {
