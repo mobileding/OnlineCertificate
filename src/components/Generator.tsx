@@ -257,7 +257,7 @@ const handleDownloadPDF = async () => {
 // 1. HERO VIEW (Empty State)
   if (!result && !initialData) {
   return (
-      <div className="min-h-[calc(100vh-64px)] bg-slate-50 font-sans text-slate-900 flex flex-col items-center">
+<div className="bg-slate-50 font-sans text-slate-900 flex flex-col items-center">
         
         {/* Changed py-20 to pt-12 to move headline UP */}
         <div className="text-center max-w-4xl mx-auto pt-12 pb-20 px-4">
