@@ -17,10 +17,10 @@ export async function POST(req: Request) {
     `;
 
     // 3. Attempt Generation with SAFETY FILTERS
+    // FIX: We cast the config object to 'any' to bypass the strict Enum type check
     const response = await genAI.models.generateContent({
       model: "gemini-2.0-flash-lite", 
       contents: [{ parts: [{ text: systemInstruction + "\n\nUser Scenario: " + prompt }] }],
-      // NEW: Strict Safety Settings
       config: {
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_LOW_AND_ABOVE" },
@@ -28,12 +28,11 @@ export async function POST(req: Request) {
           { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_LOW_AND_ABOVE" },
           { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_LOW_AND_ABOVE" },
         ]
-      }
+      } as any // <--- THIS IS THE FIX
     });
 
-    const resultText = response.text; // Fixed from .text()
+    const resultText = response.text(); // Ensure this is .text() function call
     
-    // Check if the AI itself refused to answer (it might return empty text or a refusal)
     if (!resultText) {
        throw new Error("Safety Block: The AI refused to generate this certificate.");
     }
@@ -41,7 +40,6 @@ export async function POST(req: Request) {
     const cleanedText = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
     const parsedData = JSON.parse(cleanedText);
 
-    // Double check if our system instruction caught it
     if (parsedData.error) {
        return NextResponse.json({ error: "Policy Violation: Inappropriate content detected." }, { status: 400 });
     }
@@ -51,7 +49,6 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("API Error:", error.message);
     
-    // Handle Safety Violations specifically
     if (error.message.includes("Safety") || error.message.includes("candidate")) {
         return NextResponse.json({ error: "Your request was blocked by our safety filters." }, { status: 400 });
     }
