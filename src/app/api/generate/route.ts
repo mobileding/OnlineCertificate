@@ -6,56 +6,79 @@ export async function POST(req: Request) {
     const body = await req.json();
     const prompt = body.prompt || "Default Award";
 
-    // 1. Initialize Client
+    // 1. Initialize Client (New SDK)
     const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     // 2. Define System Instruction
     const systemInstruction = `
-      You are a professional design assistant. Output ONLY raw JSON.
+      You are a specific JSON generator for novelty and appreciation awards. 
+      You are NOT a medical or legal professional. This is for fun/recognition only.
+      
+      Output ONLY raw JSON. No markdown. No pre-text.
       Extract fields: certificate_title, organization_name, recipient_name_placeholder, action_text, design_theme, theme_color.
-      If the prompt contains explicit, offensive, or inappropriate content, return a JSON with an error field: {"error": "Content violation"}.
+      
+      If the prompt implies a medical diagnosis or legal judgement, generalize it to "Service Award" or "Participation" to stay safe.
+      
+      Example JSON Structure:
+      {
+        "certificate_title": "Employee of the Month",
+        "organization_name": "Company Inc",
+        "recipient_name_placeholder": "John Doe",
+        "action_text": "For outstanding work.",
+        "design_theme": "Modern",
+        "theme_color": "blue"
+      }
     `;
 
-    // 3. Attempt Generation with SAFETY FILTERS
-    // We cast config to 'any' to avoid the Enum error
+    // 3. Attempt Generation (Gemini 2.0)
     const response = await genAI.models.generateContent({
       model: "gemini-2.0-flash-lite", 
       contents: [{ parts: [{ text: systemInstruction + "\n\nUser Scenario: " + prompt }] }],
+      // FIX: We cast 'config' to 'any' to stop the "HARM_CATEGORY" type error
       config: {
         safetySettings: [
-          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_LOW_AND_ABOVE" },
-          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_LOW_AND_ABOVE" },
-          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_LOW_AND_ABOVE" },
-          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_LOW_AND_ABOVE" },
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
         ]
       } as any
     });
 
-    // FIX: We cast response to 'any' to tell TypeScript "Trust me, .text() exists"
-    const resultText = (response as any).text(); 
+    // 4. Extract Text
+    // IMPORTANT: In the new SDK, .text is a PROPERTY, not a function.
+    // We cast response to 'any' to stop TypeScript from complaining about it.
+    const resultText = (response as any).text; 
     
+    console.log("AI Response:", resultText);
+
     if (!resultText) {
-       throw new Error("Safety Block: The AI refused to generate this certificate.");
+       throw new Error("Empty response from AI.");
     }
 
+    // 5. Clean & Parse
     const cleanedText = resultText.replace(/```json/g, "").replace(/```/g, "").trim();
-    const parsedData = JSON.parse(cleanedText);
+    
+    let parsedData;
+    try {
+        parsedData = JSON.parse(cleanedText);
+    } catch (e) {
+        console.error("JSON Parse Error:", cleanedText);
+        return NextResponse.json({ 
+            error: "The AI refused to generate this request." 
+        }, { status: 400 });
+    }
 
     if (parsedData.error) {
-       return NextResponse.json({ error: "Policy Violation: Inappropriate content detected." }, { status: 400 });
+       return NextResponse.json({ error: "Policy Violation." }, { status: 400 });
     }
     
     return NextResponse.json(parsedData);
 
   } catch (error: any) {
     console.error("API Error:", error.message);
-    
-    if (error.message.includes("Safety") || error.message.includes("candidate")) {
-        return NextResponse.json({ error: "Your request was blocked by our safety filters." }, { status: 400 });
-    }
-
     return NextResponse.json({
-      error: "Service unavailable. Please try again."
+      error: error.message || "Service unavailable."
     }, { status: 500 });
   }
 }
