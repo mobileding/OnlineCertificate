@@ -268,10 +268,10 @@ const handleDownloadPDF = async () => {
           </h1>
 
           {/* 2. SUBHEADER */}
-          <p className="text-xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-            The world's smartest certificate generator. Validated with secure <strong>QR codes</strong> and stored permanently in the cloud.
-          </p>
-
+{/* 2. SUBHEADER */}
+<p className="text-xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed">
+  Generate <strong>free</strong>, verifiable certificates with AI in seconds. Every award includes a secure <strong>QR code</strong> and is stored permanently in the cloud.
+</p>
 {/* 3. CALL TO ACTION (Input Box Wrapper) */}
 <div className="max-w-3xl mx-auto mb-16 text-left relative">
   

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { CheckCircle, ShieldCheck, Calendar, Clock, AlertTriangle, Building2, User, XCircle } from 'lucide-react';
+import { CheckCircle, Calendar, User, FileText, Hash, Stamp, ShieldCheck, Building2, Quote } from 'lucide-react';
 import Link from 'next/link';
 
 const supabase = createClient(
@@ -7,8 +7,13 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// Helper to ensure valid accent color
+function getAccentColor(color: string | null) {
+  if (!color || color.length < 4 || color.includes('bg-')) return '#2563eb'; 
+  return color.trim();
+}
+
 async function getCertificateData(code: string) {
-  // 1. Get the Certificate
   const { data: cert, error } = await supabase
     .from('certificates')
     .select(`
@@ -23,7 +28,7 @@ async function getCertificateData(code: string) {
     `)
     .eq('verification_code', code)
     .single();
-  
+    
   if (error || !cert) return null;
   return cert;
 }
@@ -34,145 +39,181 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-        {/* ... (Keep your existing Not Found UI here) ... */}
-        <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md w-full border border-red-100">
-           <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-           <h1 className="text-2xl font-bold text-slate-900">Certificate Not Found</h1>
-           <p className="text-slate-500 mt-2">The verification ID provided is invalid.</p>
+      <div className="min-h-screen bg-stone-100 flex flex-col items-center justify-center p-4 font-mono">
+        <div className="bg-white p-8 border-2 border-stone-300 border-dashed text-center max-w-md w-full">
+           <div className="w-16 h-16 bg-stone-200 mx-auto mb-4 flex items-center justify-center text-stone-400">?</div>
+           <h1 className="text-xl font-bold text-stone-800 uppercase">Record Not Found</h1>
+           <p className="text-stone-500 mt-2 text-sm">ID: {code} does not exist.</p>
         </div>
       </div>
     );
   }
 
-  // Extract Profile (Issuer) Data safely
-  // If issuer_id is null (Guest User), profile will be null
   const issuer = data.profiles as any; 
   const isGuest = !issuer;
+  
   const issueDate = new Date(data.issue_date || data.created_at).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric'
   });
 
+  const accentColor = getAccentColor(data.theme_color);
+
   return (
-    <main className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 font-sans">
-      <div className="max-w-3xl mx-auto space-y-8">
+    <main className="min-h-screen bg-stone-100 py-12 px-4 sm:px-6 font-sans">
+      <div className="max-w-4xl mx-auto space-y-8">
         
-        {/* Header */}
-        <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-1.5 rounded-full text-sm font-bold mb-4 border border-green-200 shadow-sm">
-            <CheckCircle size={16} /> Verified Authentic
-          </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Certificate of Verification</h1>
-        </div>
-
-        {/* Certificate Card (Existing Code) */}
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-          <div className="bg-slate-900 p-8 text-white text-center relative overflow-hidden">
-             <div className="relative z-10">
-              <h2 className="text-xl font-medium opacity-80 uppercase tracking-widest text-xs mb-3">Recipient</h2>
-              <p className="text-3xl md:text-5xl font-bold tracking-tight">{data.recipient_name}</p>
-            </div>
-          </div>
-          
-          <div className="p-8 grid gap-8 md:grid-cols-2">
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase mb-1">Certificate Title</p>
-              <p className="text-lg font-semibold text-slate-800 leading-tight">{data.course_title}</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase mb-1">Issuing Organization</p>
-              <p className="text-lg font-semibold text-slate-800 leading-tight">{data.organization_name}</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase mb-1">Issue Date</p>
-              <div className="flex items-center gap-2 text-slate-700">
-                <Calendar size={18} className="text-slate-400" />
-                <span className="font-medium">{issueDate}</span>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase mb-1">Verification ID</p>
-              <p className="font-mono text-xs text-slate-500 bg-slate-100 inline-block px-2 py-1 rounded border border-slate-200 break-all">
-                {data.verification_code}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* === NEW: ISSUER TRUST SCORECARD === */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-indigo-600" /> Issuer Reputation
-            </h3>
-          </div>
-          
-          <div className="p-6 grid gap-6 md:grid-cols-3">
+        {/* === THE CERTIFICATE CONTAINER === */}
+        <div className="bg-[#fdfbf7] shadow-xl border border-stone-300 relative overflow-hidden">
             
-            {/* 1. Email Verification */}
-            <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-full ${!isGuest && issuer.is_email_verified ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'}`}>
-                <User size={20} />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-500 uppercase">Issuer Identity</p>
-                {!isGuest && issuer.is_email_verified ? (
-                  <p className="text-sm font-semibold text-green-700 flex items-center gap-1">
-                    <CheckCircle size={14} /> Email Verified
-                  </p>
-                ) : (
-                   <p className="text-sm font-semibold text-slate-500 flex items-center gap-1">
-                    Unverified Guest
-                  </p>
-                )}
-              </div>
+            {/* Top "Binding" Strip */}
+            <div className="h-4 w-full bg-stone-800 border-b-2 border-stone-300"></div>
+
+            {/* Header Section */}
+            <div className="p-8 border-b-2 border-stone-200">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                    <div>
+                        {/* Label */}
+                        <div className="flex items-center gap-2 text-stone-400 mb-2">
+                            <Building2 size={18} />
+                            <span className="text-xs font-bold uppercase tracking-widest">Organization Name</span>
+                        </div>
+                        {/* The Actual Org Name */}
+                        <h1 className="text-3xl font-bold text-stone-900 uppercase tracking-tight leading-none">
+                            {data.organization_name}
+                        </h1>
+                    </div>
+                    
+                    <div className="text-right">
+                         <div className="inline-block border-2 border-stone-800 px-3 py-1 -rotate-2 opacity-80">
+                            <span className="font-black text-stone-800 uppercase text-xs tracking-widest flex items-center gap-2">
+                                <CheckCircle size={12} /> Verified Copy
+                            </span>
+                         </div>
+                    </div>
+                </div>
             </div>
 
-            {/* 2. Organization Verification */}
-            <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-full ${!isGuest && issuer.is_org_verified ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
-                <Building2 size={20} />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-500 uppercase">Organization</p>
-                {!isGuest && issuer.is_org_verified ? (
-                  <div className="text-sm">
-                    <p className="font-semibold text-blue-700 flex items-center gap-1">
-                       <CheckCircle size={14} /> Verified Business
+            {/* Info Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 border-b-2 border-stone-200 divide-y md:divide-y-0 md:divide-x divide-stone-200 bg-stone-50/50">
+                <div className="p-6">
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <User size={10} /> Award To
                     </p>
-                    <p className="text-xs text-slate-500">{issuer.organization_name}</p>
-                  </div>
-                ) : (
-                   <p className="text-sm font-semibold text-slate-500">
-                    Self-Declared
-                  </p>
-                )}
-              </div>
+                    <p className="font-bold text-stone-800 text-lg">{data.recipient_name}</p>
+                </div>
+                <div className="p-6">
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <Hash size={10} /> Verification Code
+                    </p>
+                    <p className="font-mono text-stone-600">{data.verification_code}</p>
+                </div>
+                <div className="p-6">
+                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <Calendar size={10} /> Date Issued
+                    </p>
+                    <p className="font-mono text-stone-600">{issueDate}</p>
+                </div>
             </div>
 
-            {/* 3. Account Status */}
-            <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-full ${!isGuest && issuer.account_status === 'active' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
-                <Clock size={20} />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-500 uppercase">Account Status</p>
-                {!isGuest && issuer.account_status === 'active' ? (
-                  <p className="text-sm font-semibold text-green-700">Active & Good Standing</p>
-                ) : (
-                  <p className="text-sm font-semibold text-slate-500">Guest / Inactive</p>
-                )}
-              </div>
+            {/* Course Title Section (A+ Removed) */}
+            <div className="p-8">
+                <div className="w-full border border-stone-300 bg-white shadow-sm p-10 text-center">
+                     <p className="text-3xl md:text-4xl font-bold text-stone-900 leading-tight">
+                        {data.course_title}
+                    </p>
+                </div>
             </div>
 
-          </div>
+            {/* Comments Section (Renamed to "Official Remarks") */}
+            {data.action_text && (
+                <div className="px-8 pb-8">
+                    <div className="bg-[#fffdf5] border border-stone-200 p-6 relative">
+                        {/* Lined Paper Effect */}
+                        <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-10" 
+                             style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px)', backgroundSize: '100% 2rem' }}>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mb-3 relative z-10">
+                            <Quote size={12} className="text-stone-400" />
+                            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                                Official Remarks
+                            </p>
+                        </div>
+                        
+                        <p className="text-stone-700 font-serif italic text-lg leading-loose relative z-10">
+                            "{data.action_text}"
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Footer / Signature Area */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-8 pb-10 mt-4">
+                 <div className="flex flex-col justify-end">
+                     <div className="flex items-center gap-2 mb-2">
+                        <Stamp size={16} className="text-stone-300" />
+                        <span className="text-xs text-stone-400 font-mono">AUTHTOKEN: {data.verification_code.substring(0,8)}...</span>
+                     </div>
+                 </div>
+
+                 <div className="text-center md:text-right">
+                     <div className="inline-block text-center min-w-[200px]">
+                        <p className="text-2xl text-stone-800 mb-1" style={{ fontFamily: 'cursive' }}>
+                            {data.signature_text || "Authorized Signature"}
+                        </p>
+                        <div className="h-0.5 bg-stone-800 w-full mb-1"></div>
+                        <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                            Authorized Signature
+                        </p>
+                     </div>
+                 </div>
+            </div>
+
+            {/* Bottom Color Strip */}
+            <div className="h-2 w-full" style={{ backgroundColor: accentColor }}></div>
         </div>
-        {/* === END TRUST SCORECARD === */}
 
-        <div className="flex justify-center gap-4 pt-4">
-          <Link href="/" className="flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg">
-            Create Your Own Certificate
-          </Link>
+        {/* === ISSUER TRUST CARD === */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                    <ShieldCheck size={20} />
+                </div>
+                <div>
+                    <h3 className="font-bold text-slate-800 text-sm">Issuer Verification</h3>
+                    <p className="text-xs text-slate-500">Source of this credential</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className={`p-4 rounded-lg border ${!isGuest && issuer.is_email_verified ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                        <User size={16} className={!isGuest && issuer.is_email_verified ? 'text-green-600' : 'text-slate-400'} />
+                        <span className={`text-xs font-bold uppercase ${!isGuest && issuer.is_email_verified ? 'text-green-700' : 'text-slate-500'}`}>Identity</span>
+                    </div>
+                    <p className="text-sm font-medium text-slate-700">
+                        {!isGuest && issuer.is_email_verified ? issuer.email : 'Unverified User'}
+                    </p>
+                </div>
+
+                <div className={`p-4 rounded-lg border ${!isGuest && issuer.is_org_verified ? 'bg-blue-50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                        <Building2 size={16} className={!isGuest && issuer.is_org_verified ? 'text-blue-600' : 'text-slate-400'} />
+                        <span className={`text-xs font-bold uppercase ${!isGuest && issuer.is_org_verified ? 'text-blue-700' : 'text-slate-500'}`}>Organization</span>
+                    </div>
+                    <p className="text-sm font-medium text-slate-700">
+                        {!isGuest && issuer.is_org_verified ? issuer.organization_name : 'Unverified Org'}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        {/* Footer Link */}
+        <div className="text-center pt-4 pb-12">
+             <Link href="/" className="inline-flex items-center gap-2 text-stone-500 hover:text-stone-800 transition-colors">
+                <FileText size={16} />
+                <span className="font-medium text-sm">Generate Report Card</span>
+             </Link>
         </div>
 
       </div>

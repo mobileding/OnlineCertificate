@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!template) return { title: "Certificate Not Found" };
 
   return {
-    title: template.title,
+title: `${template.title} (Free & Verifiable)`, // slightly optimized title
     description: template.description,
   };
 }

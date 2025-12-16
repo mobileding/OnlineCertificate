@@ -7,9 +7,24 @@ import { Footer } from "../components/Footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
+// CHANGE THIS VARIABLE TO 'true' WHEN YOU ARE READY TO LAUNCH
+const IS_PRODUCTION_READY = false; 
+
+
 export const metadata: Metadata = {
-  title: "OnlineCertificate.org",
-  description: "Free instant certificate generator",
+  title: 'OnlineCertificate.org',
+  description: 'Generate verifiable certificates...',
+  robots: {
+    // If not ready, tell Google to go away.
+    // index: false = Don't show in search results
+    // follow: false = Don't follow links on this page
+    index: IS_PRODUCTION_READY,
+    follow: IS_PRODUCTION_READY,
+    googleBot: {
+      index: IS_PRODUCTION_READY,
+      follow: IS_PRODUCTION_READY,
+    },
+  },
 };
 
 export default function RootLayout({
