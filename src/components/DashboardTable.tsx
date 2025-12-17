@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, Copy, Check, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
+// 1. Added 'Mail' to imports
+import { Search, Copy, Check, ExternalLink, ChevronLeft, ChevronRight, Mail } from "lucide-react";
 
 interface Certificate {
   id: string;
@@ -42,6 +43,28 @@ export function DashboardTable({ certificates }: { certificates: Certificate[] }
     navigator.clipboard.writeText(`https://onlinecertificate.org/verify/${code}`);
     setCopiedId(code);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // 3. NEW: Handle Email Click
+  const handleEmail = (cert: Certificate) => {
+    const link = `https://onlinecertificate.org/verify/${cert.verification_code}`;
+    
+    // Construct the email content
+    const subject = encodeURIComponent(`Certificate: ${cert.course_title}`);
+    const body = encodeURIComponent(
+`Hi ${cert.recipient_name},
+
+Congratulations on completing ${cert.course_title}!
+
+Here is your official digital certificate. You can view, verify, and download it at the link below:
+
+${link}
+
+Best regards,`
+    );
+
+    // Open default mail client
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
 
   return (
@@ -105,13 +128,24 @@ export function DashboardTable({ certificates }: { certificates: Certificate[] }
                     </button>
                   </td>
                   <td className="px-6 py-3 text-right">
-                    <Link 
-                      href={`/verify/${cert.verification_code}`}
-                      target="_blank"
-                      className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1 hover:underline"
-                    >
-                      View <ExternalLink size={12} />
-                    </Link>
+                    <div className="flex items-center justify-end gap-3">
+                        {/* 4. NEW: Email Button */}
+                        <button 
+                            onClick={() => handleEmail(cert)}
+                            className="text-slate-400 hover:text-slate-700 transition-colors p-1"
+                            title="Draft Email to Recipient"
+                        >
+                            <Mail size={16} />
+                        </button>
+
+                        <Link 
+                        href={`/verify/${cert.verification_code}`}
+                        target="_blank"
+                        className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1 hover:underline"
+                        >
+                        View <ExternalLink size={12} />
+                        </Link>
+                    </div>
                   </td>
                 </tr>
               ))

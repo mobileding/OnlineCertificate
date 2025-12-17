@@ -1,183 +1,203 @@
 "use client";
 
-import { Check, X, Crown, Zap, ShieldCheck, Mail, History, Building2 } from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
+import { useState } from 'react';
+import { Check, ShieldCheck, Zap, User, X, Mail, UploadCloud, Ghost, History, Lock, HelpCircle } from 'lucide-react';
+import { createBrowserClient } from "@supabase/ssr";
+import { loadStripe } from '@stripe/stripe-js';
+import Link from 'next/link';
+
+const STRIPE_PRICE_ID = "price_1Q..."; 
+
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 export default function PricingPage() {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [loading, setLoading] = useState(false);
+
+  const handleUpgrade = async () => {
+    if (!stripePromise) {
+        console.error("Stripe key missing");
+        return;
+    }
+    
+    setLoading(true);
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    
+    // 1. Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+        window.location.href = '/login'; 
+        return;
+    }
+
+    // 2. Call our API
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        priceId: STRIPE_PRICE_ID,
+        userId: user.id,
+        email: user.email
+      }),
+    });
+
+    const { sessionId } = await res.json();
+    const stripe = await stripePromise;
+    
+    // 3. Redirect to Stripe
+    if (stripe) {
+        await stripe.redirectToCheckout({ sessionId });
+    }
+    setLoading(false);
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    // UPDATED CONTAINER: Removed 'min-h-screen' and reduced bottom padding
+    <div className="bg-slate-50 pt-20 pb-10 px-4">
       
-      {/* CORRECTED COMPONENT NAME */}
+      <div className="max-w-6xl mx-auto text-center mb-16">
+        <h1 className="text-4xl font-bold text-slate-900 mb-4">Plans for Every Stage</h1>
+        <p className="text-slate-500 max-w-2xl mx-auto text-lg">
+          Start as a guest, create an account to save your work, or upgrade to verify your organization.
+        </p>
+      </div>
 
-      <main className="py-20 px-4 sm:px-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
         
-        {/* HEADER */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6">
-                Simple Pricing, <span className="text-blue-600">Professional Trust</span>
-            </h1>
-            <p className="text-xl text-slate-500">
-                Start for free as an individual, or upgrade to issue Verified Organization certificates with unlimited scale.
-            </p>
-            
-            {/* Toggle */}
-            <div className="mt-8 inline-flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
-                <button 
-                    onClick={() => setBillingCycle('monthly')}
-                    className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                    Monthly
-                </button>
-                <button 
-                    onClick={() => setBillingCycle('yearly')}
-                    className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${billingCycle === 'yearly' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                    Yearly <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded ml-1">-20%</span>
-                </button>
-            </div>
+        {/* === TIER 1: GUEST === */}
+        <div className="bg-slate-100 p-8 rounded-2xl border border-slate-200 flex flex-col relative overflow-hidden">
+          <div className="mb-6 opacity-75">
+            <h3 className="text-lg font-bold text-slate-600 flex items-center gap-2">
+                <Ghost size={20}/> Guest Visitor
+            </h3>
+            <p className="text-3xl font-bold mt-4 text-slate-500">Free</p>
+            <p className="text-xs text-slate-400 mt-2">No sign-up required.</p>
+          </div>
+
+          <div className="flex-grow">
+            <ul className="space-y-4 mb-8">
+                <li className="flex gap-3 text-sm text-slate-600">
+                    <Check className="w-5 h-5 text-slate-400 flex-shrink-0" /> 
+                    <span>Generate <strong>5 certificates</strong> / batch</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-600">
+                    <Check className="w-5 h-5 text-slate-400 flex-shrink-0" /> 
+                    <span>Secure QR Code Verification</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-400 pt-4 border-t border-slate-200 mt-4">
+                    <X className="w-5 h-5 text-red-300 flex-shrink-0" /> 
+                    <span>No Email Verification Badge</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-400">
+                    <X className="w-5 h-5 text-red-300 flex-shrink-0" /> 
+                    <span>No <strong>History Dashboard</strong></span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-400">
+                    <X className="w-5 h-5 text-red-300 flex-shrink-0" /> 
+                    <span>Cannot Edit/Delete Records</span>
+                </li>
+            </ul>
+          </div>
+          
+          <Link href="/" className="w-full py-3 rounded-xl border border-slate-300 font-bold text-slate-500 hover:bg-white hover:text-slate-700 transition-all text-center block text-sm">
+            Try as Guest
+          </Link>
         </div>
 
-        {/* PRICING GRID */}
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8 items-start">
-            
-            {/* PLAN 1: FREE / STARTER */}
-            <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm relative">
-                <div className="mb-6">
-                    <h3 className="text-lg font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <Zap size={18} /> Individual
-                    </h3>
-                    <div className="mt-4 flex items-baseline gap-1">
-                        <span className="text-4xl font-extrabold text-slate-900">$0</span>
-                        <span className="text-slate-500 font-medium">/ forever</span>
-                    </div>
-                    <p className="mt-4 text-slate-500 text-sm">
-                        Perfect for teachers, freelancers, and individuals issuing occasional awards.
-                    </p>
-                </div>
-
-                <div className="space-y-4 mb-8">
-                    <FeatureItem text="5 Certificates per Batch" />
-                    <FeatureItem text="Verified Email Badge" highlight />
-                    <FeatureItem text="Certificate History Dashboard" />
-                    <FeatureItem text="Download PDF & ZIP" />
-                    <FeatureItem text="Standard Quality (150 DPI)" />
-                    <FeatureItem text="Organization Name on Certs" negative />
-                    <FeatureItem text="Verified Organization Seal" negative />
-                    <FeatureItem text="Bulk Email Sending" negative />
-                </div>
-
-                <Link href="/dashboard" className="block w-full py-4 rounded-xl font-bold text-center border-2 border-slate-100 bg-slate-50 text-slate-900 hover:bg-slate-100 hover:border-slate-200 transition-all">
-                    Get Started for Free
-                </Link>
+        {/* === TIER 2: REGISTERED === */}
+        <div className="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-lg shadow-blue-500/5 flex flex-col transform md:-translate-y-4">
+          <div className="mb-6">
+            <div className="inline-block px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-wider rounded-full mb-2">
+                Recommended
             </div>
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <User size={20} className="text-blue-500"/> Registered Account
+            </h3>
+            <p className="text-3xl font-bold mt-4 text-slate-900">$0 <span className="text-sm font-normal text-slate-500">/mo</span></p>
+            <p className="text-xs text-slate-500 mt-2">For individuals & teachers.</p>
+          </div>
 
-            {/* PLAN 2: PRO / ORGANIZATION */}
-            <div className="bg-slate-900 rounded-2xl p-8 border border-slate-800 shadow-2xl relative overflow-hidden text-white transform md:-translate-y-4">
-                {/* Popular Badge */}
-                <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider">
-                    Most Popular
-                </div>
-
-                <div className="mb-6">
-                    <h3 className="text-lg font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                        <Crown size={18} /> Organization
-                    </h3>
-                    <div className="mt-4 flex items-baseline gap-1">
-                        <span className="text-4xl font-extrabold text-white">
-                            {billingCycle === 'monthly' ? '$29' : '$24'}
-                        </span>
-                        <span className="text-slate-400 font-medium">/ month</span>
-                    </div>
-                    <p className="mt-4 text-slate-300 text-sm">
-                        For businesses, schools, and NGOs requiring official verification and bulk power.
-                    </p>
-                </div>
-
-                <div className="space-y-4 mb-8">
-                    <FeatureItem text="Unlimited Certificates" light />
-                    <FeatureItem text="Verified Organization Seal" light highlight />
-                    <FeatureItem text="Lifetime Storage & Hosting" light />
-                    <FeatureItem text="High-Res Print Quality (300 DPI)" light />
-                    <FeatureItem text="Priority Batch Processing" light />
-                    <FeatureItem text="Custom Organization Profile" light />
-                    <FeatureItem text="Remove 'Individual' Branding" light />
-                    <div className="opacity-60 pt-2 border-t border-slate-700 mt-2">
-                        <p className="text-xs font-bold text-blue-400 uppercase mb-2">Coming Soon</p>
-                        <FeatureItem text="Mass Email Sending" light />
-                        <FeatureItem text="Automated Renewals" light />
-                    </div>
-                </div>
-
-                <button 
-                    onClick={() => alert("Stripe Integration Coming in Next Session!")}
-                    className="block w-full py-4 rounded-xl font-bold text-center bg-blue-600 text-white hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-900/20 transition-all"
-                >
-                    Upgrade to Pro
-                </button>
-                <p className="text-center text-xs text-slate-500 mt-3">Secure payment via Stripe</p>
-            </div>
-
+          <div className="flex-grow">
+            <ul className="space-y-4 mb-8">
+                <li className="flex gap-3 text-sm text-slate-700">
+                    <Check className="w-5 h-5 text-green-500 flex-shrink-0" /> 
+                    <span>Limit increased to <strong>10 / batch</strong></span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-700">
+                    <Check className="w-5 h-5 text-green-500 flex-shrink-0" /> 
+                    <span><strong>Verified Email</strong> Badge</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-700">
+                    <History className="w-5 h-5 text-blue-500 flex-shrink-0" /> 
+                    <span><strong>History Dashboard</strong> (Save Data)</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-700">
+                    <Check className="w-5 h-5 text-green-500 flex-shrink-0" /> 
+                    <span>Edit & Delete Certificates</span>
+                </li>
+            </ul>
+          </div>
+          
+          <Link href="/login" className="w-full py-3 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 transition-all text-center block shadow-md shadow-blue-200">
+            Create Free Account
+          </Link>
+          <p className="text-[10px] text-slate-400 mt-3 text-center">No credit card required</p>
         </div>
 
-        {/* FAQ SECTION */}
-        <div className="max-w-3xl mx-auto mt-24">
-            <h2 className="text-2xl font-bold text-slate-900 mb-8 text-center">Frequently Asked Questions</h2>
-            <div className="grid gap-6">
-                <FaqItem 
-                    q="What is the 'Verified Organization Seal'?" 
-                    a="Free users get a 'Verified Individual' badge (linked to email). Pro users get a 'Verified Organization' badge with a blue checkmark, linking to your official business name. This builds significantly more trust with recipients." 
-                />
-                <FaqItem 
-                    q="Can I cancel anytime?" 
-                    a="Yes. There are no contracts. You can downgrade to the Free plan whenever you like. Your existing certificates will remain safe." 
-                />
-                <FaqItem 
-                    q="What happens to my certificates if I stop paying?" 
-                    a="Pro certificates are stored for life. Even if you downgrade, previously issued certificates remain verifiable forever." 
-                />
-            </div>
+        {/* === TIER 3: PRO === */}
+        <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden text-white flex flex-col">
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <ShieldCheck className="text-emerald-400" size={20}/> Verified Org
+            </h3>
+            <p className="text-3xl font-bold mt-4 text-white">$29 <span className="text-sm font-normal text-slate-400">/mo</span></p>
+            <p className="text-xs text-slate-400 mt-2">For schools & businesses.</p>
+          </div>
+          
+          <div className="flex-grow">
+             <ul className="space-y-4 mb-8">
+                <li className="flex gap-3 text-sm text-slate-300">
+                    <Check className="w-5 h-5 text-emerald-500 flex-shrink-0" /> 
+                    <span><strong>Unlimited</strong> Certificates</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                    <ShieldCheck className="w-5 h-5 text-emerald-500 flex-shrink-0" /> 
+                    <span><strong>Verified Organization</strong> Seal</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                    <UploadCloud className="w-5 h-5 text-emerald-500 flex-shrink-0" /> 
+                    <span><strong>Mass Upload</strong> (CSV Support)*</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                    <Mail className="w-5 h-5 text-emerald-500 flex-shrink-0" /> 
+                    <span><strong>Email Sender</strong> Tool</span>
+                </li>
+                <li className="flex gap-3 text-sm text-slate-300">
+                    <Check className="w-5 h-5 text-emerald-500 flex-shrink-0" /> 
+                    <span>Custom Logo Upload</span>
+                </li>
+            </ul>
+          </div>
+          
+          <button 
+            onClick={handleUpgrade}
+            disabled={loading}
+            className="w-full py-3 rounded-xl border border-slate-700 hover:bg-slate-800 font-bold text-white transition-all flex justify-center items-center gap-2"
+          >
+            {loading ? 'Processing...' : (
+                <>
+                    <Zap size={18} /> Upgrade to Pro
+                </>
+            )}
+          </button>
+          <p className="text-[10px] text-slate-500 mt-3 text-center">* Fair use limits apply.</p>
         </div>
 
-      </main>
+      </div>
     </div>
   );
-}
-
-// --- SUBCOMPONENTS ---
-
-function FeatureItem({ text, negative = false, highlight = false, light = false }: { text: string, negative?: boolean, highlight?: boolean, light?: boolean }) {
-    return (
-        <div className={`flex items-center gap-3 ${negative ? "opacity-50" : ""}`}>
-            <div className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
-                negative ? "bg-slate-100 text-slate-400" : 
-                highlight ? (light ? "bg-blue-500 text-white" : "bg-green-100 text-green-600") :
-                (light ? "bg-slate-800 text-slate-300" : "bg-blue-50 text-blue-600")
-            }`}>
-                {negative ? <X size={12} /> : <Check size={12} />}
-            </div>
-            <span className={`text-sm font-medium ${
-                highlight ? (light ? "text-white" : "text-slate-900") : 
-                (light ? "text-slate-300" : "text-slate-600")
-            }`}>
-                {text}
-            </span>
-            {highlight && !negative && (
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${light ? "bg-blue-900 text-blue-200" : "bg-green-100 text-green-700"}`}>
-                    Key
-                </span>
-            )}
-        </div>
-    );
-}
-
-function FaqItem({ q, a }: { q: string, a: string }) {
-    return (
-        <div className="bg-white p-6 rounded-xl border border-slate-200">
-            <h4 className="font-bold text-slate-900 mb-2">{q}</h4>
-            <p className="text-sm text-slate-500 leading-relaxed">{a}</p>
-        </div>
-    );
 }

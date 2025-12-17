@@ -65,16 +65,24 @@ export function HomeContent() {
             </p>
           </div>
 
-          {/* Step 2 */}
-          <div className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 hover:border-indigo-300 transition-all hover:-translate-y-1">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white mb-4 shadow-lg shadow-indigo-200">
-              <Lock size={24} />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-2">2. Secure & Verify</h3>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              We assign a unique 12-digit blockchain-style ID to every document. It's tamper-proof and instantly checkable.
-            </p>
-          </div>
+{/* Step 2 - NOW CLICKABLE */}
+<Link 
+  href="/verify" 
+  className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 hover:border-indigo-300 transition-all hover:-translate-y-1 block cursor-pointer"
+>
+  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white mb-4 shadow-lg shadow-indigo-200">
+    <Lock size={24} />
+  </div>
+  
+  {/* Added 'group-hover:text-indigo-600' so the title lights up on hover */}
+  <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
+    2. Secure & Verify
+  </h3>
+  
+  <p className="text-slate-500 text-sm leading-relaxed">
+    We assign a unique 12-digit blockchain-style ID to every document. It's tamper-proof and instantly checkable.
+  </p>
+</Link>
 
           {/* Step 3 */}
           <div className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 hover:border-green-300 transition-all hover:-translate-y-1">

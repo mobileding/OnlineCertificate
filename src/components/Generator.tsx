@@ -5,6 +5,7 @@ import {
   Briefcase, Heart, Home, Upload, Check, Sparkles, ShieldCheck, PenTool,
   AlertCircle, Download, ScrollText, Wand2, Award // <--- Added Award
 } from "lucide-react";
+import Link from 'next/link';
 import { CertificateTemplate } from './CertificateTemplate';
 import html2canvas from 'html2canvas';
 import { useState, useEffect } from 'react'; 
@@ -270,7 +271,13 @@ const handleDownloadPDF = async () => {
           {/* 2. SUBHEADER */}
 {/* 2. SUBHEADER */}
 <p className="text-xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-  Generate <strong>free</strong>, verifiable certificates with AI in seconds. Every award includes a secure <strong>QR code</strong> and is stored permanently in the cloud.
+  Generate <strong>free</strong>, <Link 
+        href="/verify" 
+        className="text-blue-600 hover:text-blue-700 hover:underline decoration-blue-300 underline-offset-4 font-semibold transition-all"
+        title="Check a verification code"
+    >
+        verifiable certificates
+    </Link>{' '} with AI in seconds. Every award includes a secure <strong>QR code</strong> and is stored permanently in the cloud.
 </p>
 {/* 3. CALL TO ACTION (Input Box Wrapper) */}
 <div className="max-w-3xl mx-auto mb-16 text-left relative">
