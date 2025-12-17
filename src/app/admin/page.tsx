@@ -1,10 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import Link from 'next/link'; // Import Link
-import { FileText, Search, Users, ArrowRight } from 'lucide-react'; // Import Icons
+import Link from 'next/link';
+import { FileText, Users, ArrowRight, LayoutTemplate, Target } from 'lucide-react';
 
-// Import the Client Component for the user row
 import { AdminUserRow } from '../../components/AdminUserRow';
 
 export default async function AdminPage() {
@@ -22,15 +21,26 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  // Fetch profiles with certificate counts
-  const { data: profiles, error } = await supabase
+  // 1. Fetch profiles
+  const { data: profiles } = await supabase
     .from('profiles')
     .select('*, certificates(count)', { count: 'exact' }) 
     .order('created_at', { ascending: false });
 
-  // Get some quick stats (optional, but looks nice)
+  // 2. Get quick stats for pages/posts
   const { count: templateCount } = await supabase.from('templates').select('*', { count: 'exact', head: true });
   const { count: blogCount } = await supabase.from('posts').select('*', { count: 'exact', head: true });
+  
+  // 3. NEW: Get "Completed This Week" stats
+  const now = new Date();
+  const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); // Set to previous Sunday
+  startOfWeek.setHours(0, 0, 0, 0); // Start of the day
+
+  const { count: weeklyCount } = await supabase
+    .from('seo_missions')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'completed')
+    .gte('completed_at', startOfWeek.toISOString());
 
   return (
     <main className="min-h-screen bg-slate-50 p-6">
@@ -50,46 +60,64 @@ export default async function AdminPage() {
           </div>
         </div>
 
-        {/* SECTION 1: MANAGEMENT LINKS (New) */}
-        <div className="grid md:grid-cols-2 gap-6">
+        {/* SECTION 1: MANAGEMENT LINKS */}
+        <div className="grid md:grid-cols-3 gap-6">
             
-            {/* SEO Template Manager Card */}
-            <Link href="/admin/seotemplate" className="group block bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all">
+            {/* 1. MISSION CONTROL (Green - Shows Velocity) */}
+            <Link href="/admin/tasks" className="group block bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all">
                 <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                        <Search size={24} />
+                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+                        <Target size={24} />
+                    </div>
+                    {/* UPDATED BADGE: Shows accomplishments this week */}
+                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded flex items-center gap-1">
+                        <span className="text-emerald-600">+{weeklyCount || 0}</span> This Week
+                    </span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-emerald-600 transition-colors">Mission Control</h3>
+                <p className="text-slate-500 text-sm mb-4">Generate keywords, assign tasks, and track your content velocity.</p>
+                <div className="text-emerald-600 text-sm font-bold flex items-center group-hover:underline">
+                    View Tasks <ArrowRight size={16} className="ml-1" />
+                </div>
+            </Link>
+            
+            {/* 2. SEO TEMPLATES (Purple) */}
+            <Link href="/admin/seotemplate" className="group block bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-purple-300 transition-all">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
+                        <LayoutTemplate size={24} />
                     </div>
                     <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">
                         {templateCount || 0} Pages
                     </span>
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">SEO Template Manager</h3>
-                <p className="text-slate-500 text-sm mb-4">Create and manage programmatic landing pages (e.g. "Best Dad Certificate").</p>
-                <div className="text-blue-600 text-sm font-bold flex items-center group-hover:underline">
-                    Manage Templates <ArrowRight size={16} className="ml-1" />
+                <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-purple-600 transition-colors">SEO Templates</h3>
+                <p className="text-slate-500 text-sm mb-4">Create programmatic landing pages (e.g. "Best Dad Certificate").</p>
+                <div className="text-purple-600 text-sm font-bold flex items-center group-hover:underline">
+                    Manage Pages <ArrowRight size={16} className="ml-1" />
                 </div>
             </Link>
 
-            {/* Blog Manager Card */}
-            <Link href="/admin/blog" className="group block bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-purple-300 transition-all">
+            {/* 3. BLOG MANAGER (Blue) */}
+            <Link href="/admin/blog" className="group block bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all">
                 <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
+                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
                         <FileText size={24} />
                     </div>
                     <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">
                         {blogCount || 0} Posts
                     </span>
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-purple-600 transition-colors">Blog Manager</h3>
+                <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">Blog Manager</h3>
                 <p className="text-slate-500 text-sm mb-4">Write articles, manage drafts, and publish content to the blog.</p>
-                <div className="text-purple-600 text-sm font-bold flex items-center group-hover:underline">
+                <div className="text-blue-600 text-sm font-bold flex items-center group-hover:underline">
                     Manage Blog <ArrowRight size={16} className="ml-1" />
                 </div>
             </Link>
 
         </div>
 
-        {/* SECTION 2: USER TABLE (Existing) */}
+        {/* SECTION 2: USER TABLE */}
         <div>
             <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
                 <Users size={20} /> Master User List
