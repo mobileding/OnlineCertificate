@@ -3,23 +3,16 @@
 import { useState } from 'react';
 import { Check, ShieldCheck, Zap, User, X, Mail, UploadCloud, Ghost, History, Lock, HelpCircle } from 'lucide-react';
 import { createBrowserClient } from "@supabase/ssr";
-import { loadStripe } from '@stripe/stripe-js';
 import Link from 'next/link';
 
-const STRIPE_PRICE_ID = "price_1Q..."; 
+// NOTE: We removed 'loadStripe' imports because we don't need them anymore!
 
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
+const STRIPE_PRICE_ID = "price_1Q..."; // Keep your ID here
 
 export default function PricingPage() {
   const [loading, setLoading] = useState(false);
 
   const handleUpgrade = async () => {
-    if (!stripePromise) {
-        console.error("Stripe key missing");
-        return;
-    }
-    
     setLoading(true);
     const supabase = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,30 +27,36 @@ export default function PricingPage() {
         return;
     }
 
-    // 2. Call our API
-    const res = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        priceId: STRIPE_PRICE_ID,
-        userId: user.id,
-        email: user.email
-      }),
-    });
+    try {
+        // 2. Call our API
+        const res = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            priceId: STRIPE_PRICE_ID,
+            userId: user.id,
+            email: user.email
+          }),
+        });
 
-    const { sessionId } = await res.json();
-    const stripe = await stripePromise;
-    
-    // 3. Redirect to Stripe
-    if (stripe) {
-        await stripe.redirectToCheckout({ sessionId });
+        const data = await res.json();
+        
+        // 3. Redirect using the URL from the server
+        if (data.url) {
+            window.location.href = data.url;
+        } else {
+            console.error("No URL returned", data);
+            setLoading(false);
+        }
+    } catch (error) {
+        console.error(error);
+        setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    // UPDATED CONTAINER: Removed 'min-h-screen' and reduced bottom padding
     <div className="bg-slate-50 pt-20 pb-10 px-4">
+      {/* ... (The rest of your JSX remains exactly the same) ... */}
       
       <div className="max-w-6xl mx-auto text-center mb-16">
         <h1 className="text-4xl font-bold text-slate-900 mb-4">Plans for Every Stage</h1>
@@ -68,7 +67,7 @@ export default function PricingPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto">
         
-        {/* === TIER 1: GUEST === */}
+        {/* TIER 1: GUEST */}
         <div className="bg-slate-100 p-8 rounded-2xl border border-slate-200 flex flex-col relative overflow-hidden">
           <div className="mb-6 opacity-75">
             <h3 className="text-lg font-bold text-slate-600 flex items-center gap-2">
@@ -108,7 +107,7 @@ export default function PricingPage() {
           </Link>
         </div>
 
-        {/* === TIER 2: REGISTERED === */}
+        {/* TIER 2: REGISTERED */}
         <div className="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-lg shadow-blue-500/5 flex flex-col transform md:-translate-y-4">
           <div className="mb-6">
             <div className="inline-block px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase tracking-wider rounded-full mb-2">
@@ -148,7 +147,7 @@ export default function PricingPage() {
           <p className="text-[10px] text-slate-400 mt-3 text-center">No credit card required</p>
         </div>
 
-        {/* === TIER 3: PRO === */}
+        {/* TIER 3: PRO */}
         <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden text-white flex flex-col">
           <div className="mb-6">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
