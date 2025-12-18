@@ -141,7 +141,7 @@ export default function PricingPage() {
             </ul>
           </div>
           
-          <Link href="/login" className="w-full py-3 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 transition-all text-center block shadow-md shadow-blue-200">
+          <Link href="/signup" className="w-full py-3 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 transition-all text-center block shadow-md shadow-blue-200">
             Create Free Account
           </Link>
           <p className="text-[10px] text-slate-400 mt-3 text-center">No credit card required</p>
