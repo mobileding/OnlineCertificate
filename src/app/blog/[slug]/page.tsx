@@ -1,89 +1,106 @@
-import { createClient } from "@supabase/supabase-js";
-import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Calendar } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft, Calendar, User } from 'lucide-react';
+import ReactMarkdown from 'react-markdown'; // Ensure you have this installed
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
-// 1. Dynamic SEO
-export async function generateMetadata({ params }: Props) {
+export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const { data: post } = await supabase.from("posts").select("title, excerpt, cover_image").eq("slug", slug).single();
+  const cookieStore = await cookies();
   
-  if (!post) return { title: "Article Not Found" };
-  
-  return {
-    title: post.title,
-    description: post.excerpt,
-    // Optional: Add OpenGraph image so the picture shows up when shared on Twitter/Facebook
-    openGraph: {
-      images: post.cover_image ? [post.cover_image] : [],
-    }
-  };
-}
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  );
 
-// 2. The Article Page
-export default async function BlogPost({ params }: Props) {
-  const { slug } = await params;
-  
+  // 1. GET CURRENT USER (To check if Admin)
+  const { data: { user } } = await supabase.auth.getUser();
+  const isAdmin = user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+
+  // 2. FETCH POST
+  // We do NOT filter by is_published=true here. 
+  // We let RLS handle it, or we handle it manually below.
   const { data: post } = await supabase
-    .from("posts")
-    .select("*")
-    .eq("slug", slug)
-    .eq("is_published", true)
+    .from('posts')
+    .select('*')
+    .eq('slug', slug)
     .single();
 
+  // 3. HANDLE 404
   if (!post) {
     notFound();
   }
 
-  return (
-    <main className="min-h-screen bg-white pb-20">
-      
-      {/* Hero Header */}
-      <div className="bg-slate-900 text-white py-20 px-4 text-center">
-        <div className="max-w-3xl mx-auto space-y-4">
-          <Link href="/blog" className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm mb-4">
-            <ArrowLeft size={16} /> Back to Blog
-          </Link>
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
-            {post.title}
-          </h1>
-          <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
-             <Calendar size={16} />
-             {new Date(post.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}
-          </div>
-        </div>
-      </div>
+  // 4. SECURITY CHECK: If Draft + Not Admin -> 404
+  if (!post.is_published && !isAdmin) {
+    notFound();
+  }
 
-      {/* NEW: Cover Image Section */}
-      {post.cover_image && (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-12 relative z-10">
-          <img 
-            src={post.cover_image} 
-            alt={post.title}
-            className="w-full h-[400px] object-cover rounded-2xl shadow-xl border-4 border-white bg-slate-100"
-          />
+  return (
+    <main className="min-h-screen bg-white">
+      {/* DRAFT BANNER (Only visible to Admin) */}
+      {!post.is_published && (
+        <div className="bg-yellow-100 border-b border-yellow-200 text-yellow-800 text-center py-2 text-xs font-bold uppercase tracking-wider sticky top-0 z-50">
+          🚧 Preview Mode: You are viewing an unpublished draft
         </div>
       )}
 
-      {/* Content */}
-      <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
-        <div className="prose prose-lg prose-slate prose-headings:font-bold prose-a:text-blue-600 hover:prose-a:text-blue-800 mx-auto">
-          <ReactMarkdown>
-            {post.content}
-          </ReactMarkdown>
+      {/* COVER IMAGE */}
+      {post.cover_image && (
+        <div className="w-full h-[40vh] md:h-[50vh] relative overflow-hidden bg-slate-100">
+           <img 
+             src={post.cover_image} 
+             alt={post.title} 
+             className="w-full h-full object-cover"
+           />
+           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         </div>
-      </article>
+      )}
 
+      <div className="max-w-3xl mx-auto px-6 -mt-20 relative z-10 pb-20">
+        <Link href="/blog" className="inline-flex items-center text-white/90 hover:text-white mb-6 text-sm font-medium transition-colors">
+           <ArrowLeft size={16} className="mr-2" /> Back to Blog
+        </Link>
+        
+        <div className="bg-white rounded-2xl p-8 md:p-12 shadow-xl border border-slate-100">
+           {/* META */}
+           <div className="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-6">
+              <span className="flex items-center gap-1">
+                 <Calendar size={12} /> {new Date(post.created_at).toLocaleDateString()}
+              </span>
+              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+              <span className="flex items-center gap-1">
+                 <User size={12} /> Admin
+              </span>
+           </div>
+
+           {/* TITLE */}
+           <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-6 leading-tight">
+             {post.title}
+           </h1>
+
+           {/* CONTENT (Markdown) */}
+           <article className="prose prose-slate prose-lg max-w-none">
+             {/* If you don't have react-markdown, just use simple whitespace handling for now */}
+             <ReactMarkdown 
+                components={{
+                    // Optional: Custom styling for markdown elements
+                    h2: ({node, ...props}) => <h2 className="text-2xl font-bold mt-8 mb-4 text-slate-900" {...props} />,
+                    p: ({node, ...props}) => <p className="mb-4 text-slate-600 leading-relaxed" {...props} />,
+                    li: ({node, ...props}) => <li className="ml-4 list-disc text-slate-600 mb-2" {...props} />,
+                }}
+             >
+                {post.content}
+             </ReactMarkdown>
+           </article>
+        </div>
+      </div>
     </main>
   );
 }

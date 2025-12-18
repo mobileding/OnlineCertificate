@@ -3,6 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 // --- HELPER: Database Connection ---
 async function createClient() {
@@ -93,6 +94,59 @@ export async function createBlogPost(formData: FormData) {
     return { success: false, error: error.message };
   }
 }
+
+
+
+// src/app/actions/blog.ts
+
+export async function updateBlogPost(formData: FormData) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  );
+
+  const id = formData.get('id') as string;
+  const title = formData.get('title') as string;
+  const excerpt = formData.get('excerpt') as string;
+  const content = formData.get('content') as string;
+  const cover_image = formData.get('cover_image') as string;
+  const slug = formData.get('slug') as string;
+  const is_published = formData.get('is_published') === 'on';
+
+  // 1. GENERATE SLUG (if empty)
+  const finalSlug = slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+
+  const { error } = await supabase
+    .from('posts') // <--- FIXED: Table name is 'posts'
+    .update({
+      title,
+      slug: finalSlug,
+      excerpt,
+      content,
+      cover_image,
+      is_published
+      // removed 'updated_at' because your table doesn't have it
+    })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error updating post:', error);
+    return { error: error.message };
+  }
+
+  // Revalidate paths
+  revalidatePath('/admin/blog'); 
+  revalidatePath(`/blog/${finalSlug}`);
+  revalidatePath(`/admin/blog/${id}`);
+  
+  redirect('/admin/blog');
+}
+
+
+
+
 
 // 3. DELETE POST
 export async function deleteBlogPost(formData: FormData) {

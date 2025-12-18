@@ -194,14 +194,13 @@ A **${targetKeyword}** is more than just a piece of paper—it's a memory. By ta
                   {posts.map((post: any) => (
                     <li key={post.id} className="p-3 hover:bg-slate-50 transition-colors group">
                       <div className="flex justify-between items-start gap-2 mb-1">
-                          <Link 
-                            href={`/blog/${post.slug}`} 
-                            target="_blank" 
-                            className="font-bold text-slate-700 text-sm hover:text-blue-600 truncate leading-tight block flex-1"
-                            title={post.title}
-                          >
-                            {post.title}
-                          </Link>
+<Link 
+  href={`/admin/blog/${post.id}`} // NEW: Goes to the Editor page we just made
+  className="font-bold text-slate-700 text-sm hover:text-blue-600 truncate leading-tight block flex-1"
+  title="Edit this post"
+>
+  {post.title}
+</Link>
                           
                           {/* Tiny Actions */}
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
