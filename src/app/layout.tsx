@@ -4,7 +4,8 @@ import "./globals.css";
 // IMPORT BOTH NAV AND FOOTER
 import { Navigation } from "../components/Navigation";
 import { Footer } from "../components/Footer";
-
+// 1. Import the component
+import { GoogleAnalytics } from '@next/third-parties/google'
 const inter = Inter({ subsets: ["latin"] });
 
 // CHANGE THIS VARIABLE TO 'true' WHEN YOU ARE READY TO LAUNCH
@@ -41,7 +42,8 @@ export default function RootLayout({
         <div className="flex-grow">
           {children}
         </div>
-        
+{/* 2. Add the component here with your ID */}
+        <GoogleAnalytics gaId="G-3KV3BN7SVJ" />        
         <Footer />
       </body>
     </html>
