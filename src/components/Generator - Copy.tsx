@@ -3,7 +3,7 @@
 import { 
   Loader2, Save, Palette, Type, LayoutTemplate, 
   Briefcase, Heart, Home, Upload, Check, Sparkles, ShieldCheck, PenTool,
-  AlertCircle, Download, ScrollText, Wand2, Award, Lock, Crown // <--- Crown added
+  AlertCircle, Download, ScrollText, Wand2, Award // <--- Added Award
 } from "lucide-react";
 import Link from 'next/link';
 import { CertificateTemplate } from './CertificateTemplate';
@@ -15,7 +15,6 @@ import { saveCertificate } from "../app/actions/save";
 
 import { SaveModal } from './SaveModal';
 import { SuccessModal } from './SuccessModal';
-import { PricingModal } from './PricingModal'; // <--- 1. Import Pricing Modal
 
 interface GeneratorProps {
   initialPrompt?: string;
@@ -33,11 +32,11 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
   const [activeTab, setActiveTab] = useState<'design' | 'text' | 'ai' | 'paper'>('ai');
   const [textureStyle, setTextureStyle] = useState('None');
 
+
   const [userLimitStatus, setUserLimitStatus] = useState<any>({
       canSave: true, 
       reason: "", 
-      isLoggedIn: true,
-      tier: 'guest' // Default
+      isLoggedIn: true, 
   });
   
   // Certificate Data
@@ -48,7 +47,6 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
   const [designTheme, setDesignTheme] = useState<"Modern" | "Classic" | "Playful" | "Minimal" | "Gothic">("Modern");
 
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-  const [isPricingOpen, setIsPricingOpen] = useState(false); // <--- 2. State for Pricing Modal
   const [logs, setLogs] = useState<string[]>([]);
 
   // === EFFECTS ===
@@ -62,9 +60,6 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
     { label: "Volunteer", value: "Michael Johnson has successfully completed 50 hours of community service volunteering.", icon: Heart },
     { label: "Top Tenant", value: "Joseph is awarded Top Tenant of 2024 by First Real Estate Co for consistent payments.", icon: Home }
   ];
-
-  // Helper to check Pro status
-  const isPro = userLimitStatus?.tier === 'pro'; // <--- 3. Check Tier
 
   // === HANDLERS ===
 
@@ -128,7 +123,7 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
         course_title:          result.certificate_title || "Certificate",
         organization_name:     result.organization_name || "Organization",
         action_text:           result.action_text || "For outstanding achievement.",
-        signature_text:        result.signature_text,
+	signature_text:        result.signature_text, // <--- ADD THIS
         theme:                 "Modern",
         theme_color:           customColor,
         verification_code:     formattedId,
@@ -172,7 +167,7 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
         course_title:          result.certificate_title || "Certificate",
         organization_name:     result.organization_name || "Organization",
         action_text:           result.action_text || "For outstanding achievement.",
-        signature_text:        result.signature_text,
+signature_text:        result.signature_text, // <--- ADD THIS
         theme:                 "Modern",
         theme_color:           customColor,
         verification_code:     `${generateSegment()}-${generateSegment()}-${generateSegment()}`,
@@ -216,25 +211,28 @@ const handleDownloadPDF = async () => {
     const element = document.querySelector('#certificate-preview-container') as HTMLElement;
     if (!element) return;
 
-    // 1. CLONE
+    // 1. CLONE the element
+    // We clone it so we can manipulate it without affecting the visible UI
     const clone = element.cloneNode(true) as HTMLElement;
 
-    // 2. RESET STYLES
+    // 2. RESET STYLES on the clone
+    // We force the clone to be full size (no scaling) and fully opaque
     clone.style.transform = 'scale(1)';
     clone.style.position = 'fixed';
-    clone.style.left = '-9999px'; 
+    clone.style.left = '-9999px'; // Hide it off-screen
     clone.style.top = '0';
-    clone.style.width = '1123px'; 
-    clone.style.height = '794px'; 
+    clone.style.width = '1123px'; // Force exact A4 landscape width
+    clone.style.height = '794px'; // Force exact A4 landscape height
     clone.style.zIndex = '-1';
     
+    // Append clone to body so html2canvas can find it
     document.body.appendChild(clone);
 
     try {
-        // 3. CAPTURE
+        // 3. CAPTURE the clone
         const canvas = await html2canvas(clone, { 
-            scale: 2, 
-            useCORS: true, 
+            scale: 2, // High resolution
+            useCORS: true, // Allow loading external images (logos)
             logging: false,
             windowWidth: 1123,
             windowHeight: 794
@@ -262,12 +260,16 @@ const handleDownloadPDF = async () => {
   return (
 <div className="bg-slate-50 font-sans text-slate-900 flex flex-col items-center">
         
+        {/* Changed py-20 to pt-12 to move headline UP */}
         <div className="text-center max-w-4xl mx-auto pt-12 pb-20 px-4">
           
+          {/* 1. HEADLINE */}
           <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6">
             AI-Written. <span className="text-blue-600">Instantly Verified.</span>
           </h1>
 
+          {/* 2. SUBHEADER */}
+{/* 2. SUBHEADER */}
 <p className="text-xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed">
   Generate <strong>free</strong>, <Link 
         href="/verify" 
@@ -277,8 +279,11 @@ const handleDownloadPDF = async () => {
         verifiable certificates
     </Link>{' '} with AI in seconds. Every award includes a secure <strong>QR code</strong> and is stored permanently in the cloud.
 </p>
+{/* 3. CALL TO ACTION (Input Box Wrapper) */}
 <div className="max-w-3xl mx-auto mb-16 text-left relative">
   
+  {/* === THE BACKGROUND STAMP (Behind the Form) === */}
+{/* === THE BACKGROUND STAMP === */}
 <div className="absolute 
     -bottom-[200px] 
     -right-[100px] 
@@ -290,6 +295,8 @@ const handleDownloadPDF = async () => {
       className="w-[500px] h-auto object-contain rotate-[-12deg]"
     />
 </div>
+  {/* === THE FORM (White Box) === */}
+  {/* z-10 ensures this sits ON TOP of the stamp */}
   <div className="relative z-10 bg-white border-2 border-slate-200 rounded-xl shadow-xl shadow-slate-200/50 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-50 transition-all p-2 group">
       
       <textarea
@@ -321,8 +328,15 @@ const handleDownloadPDF = async () => {
           </button>
       </div>
   </div>
+
+
+
+
+
+
           </div>
 
+          {/* 4. THE "AT A GLANCE" ICONS */}
           <div className="grid md:grid-cols-3 gap-8 text-left max-w-3xl mx-auto border-t border-slate-200 pt-10">
               
               {/* Feature A */}
@@ -363,9 +377,9 @@ const handleDownloadPDF = async () => {
       </div>
     );
   }
-  
   // 2. STUDIO VIEW (New Layout)
   return (
+// ... inside return (
     <div className="flex flex-col min-h-[calc(100vh-64px)] bg-slate-50 font-sans text-slate-900 animate-in fade-in duration-500">
       
 {/* === TOP: CANVAS PREVIEW AREA === */}
@@ -386,6 +400,7 @@ const handleDownloadPDF = async () => {
          </div>
 
          {/* CERTIFICATE PREVIEW */}
+         {/* UPDATED SCALES: Increased to make certificate larger and legible */}
          <div 
             id="certificate-preview-container" 
             className="shadow-2xl border border-white bg-white origin-top transition-all
@@ -401,7 +416,7 @@ const handleDownloadPDF = async () => {
                 frameStyle={frameStyle}
                 customLogo={customLogo || undefined}
                 designTheme={designTheme}
-                textureStyle={textureStyle} 
+		textureStyle={textureStyle} 
             />
          </div>
       </div>
@@ -424,12 +439,12 @@ const handleDownloadPDF = async () => {
                 >
                     <Type size={14} /> Text
                 </button>
-                <button 
-                    onClick={() => setActiveTab('paper')} 
-                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'paper' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                    <ScrollText size={14} /> Paper
-                </button>
+<button 
+        onClick={() => setActiveTab('paper')} 
+        className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'paper' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+    >
+        <ScrollText size={14} /> Paper
+    </button>
                 <button 
                     onClick={() => setActiveTab('ai')} 
                     className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'ai' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
@@ -524,35 +539,24 @@ const handleDownloadPDF = async () => {
                         />
                     </div>
 
+
+
+
                     <div className="lg:col-span-2">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Message</label>
                         <input className="w-full p-2 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-blue-100 outline-none" value={result.action_text || ''} onChange={(e) => updateField('action_text', e.target.value)} />
                     </div>
                     
-                    {/* === LOGO UPLOAD (LOCKED FOR NON-PRO) === */}
+                    {/* Logo Upload Moved to Text Tab for better flow */}
                     <div>
-                        <div className="flex justify-between items-center mb-1">
-                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Upload Logo</label>
-                             {!isPro && <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1"><Crown size={10} /> PRO</span>}
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Upload Logo</label>
+                        <div className="flex gap-2 items-center">
+                            <input type="file" accept="image/*" onChange={handleLogoUpload} className="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                            {customLogo && <button onClick={() => setCustomLogo(null)} className="text-xs text-red-500 font-bold hover:underline">Remove</button>}
                         </div>
-                        
-                        {isPro ? (
-                            // PRO USER VIEW
-                            <div className="flex gap-2 items-center">
-                                <input type="file" accept="image/*" onChange={handleLogoUpload} className="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-                                {customLogo && <button onClick={() => setCustomLogo(null)} className="text-xs text-red-500 font-bold hover:underline">Remove</button>}
-                            </div>
-                        ) : (
-                            // GUEST/FREE VIEW (LOCKED)
-                            <button 
-                                onClick={() => setIsPricingOpen(true)}
-                                className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 rounded-lg text-xs font-bold text-slate-400 hover:border-amber-300 hover:text-amber-600 hover:bg-amber-50 transition-all"
-                            >
-                                <Lock size={12} /> Unlock Logo Upload
-                            </button>
-                        )}
                     </div>
                     
+                    {/* Recipient is handled by Save Modal, but we can show it here for single edits */}
                     <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Preview Name</label>
                         <input className="w-full p-2 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-blue-100 outline-none" value={result.recipient_name_placeholder || ''} onChange={(e) => updateField('recipient_name_placeholder', e.target.value)} />
@@ -560,64 +564,71 @@ const handleDownloadPDF = async () => {
                 </div>
             )}
 
-            {/* TAB 4: PAPER TEXTURES */}
-            {activeTab === 'paper' && (
-                <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-4 text-center">
-                        Select Paper Material
-                    </label>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {/* Option 1: Standard */}
-                        <button 
-                            onClick={() => setTextureStyle('None')}
-                            className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${textureStyle === 'None' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
-                        >
-                            <div className="w-12 h-12 bg-white border border-slate-200 rounded-full shadow-sm"></div>
-                            <span className="text-xs font-bold text-slate-700">Standard</span>
-                        </button>
 
-                        {/* Option 2: Gold Foil */}
-                        <button 
-                            onClick={() => setTextureStyle('Gold')}
-                            className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 overflow-hidden ${textureStyle === 'Gold' ? 'border-blue-600' : 'border-slate-200 hover:border-slate-300'}`}
-                        >
-                            <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-yellow-600 via-yellow-200 to-yellow-600"></div>
-                            <div className="w-12 h-12 rounded-full shadow-sm bg-gradient-to-br from-yellow-500 via-yellow-200 to-yellow-500 border border-yellow-600"></div>
-                            <span className="text-xs font-bold text-slate-700 relative z-10">Gold Foil</span>
-                        </button>
+{/* TAB 4: PAPER TEXTURES */}
+{activeTab === 'paper' && (
+    <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-2">
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-4 text-center">
+            Select Paper Material
+        </label>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            
+            {/* Option 1: Standard */}
+            <button 
+                onClick={() => setTextureStyle('None')}
+                className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${textureStyle === 'None' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+            >
+                <div className="w-12 h-12 bg-white border border-slate-200 rounded-full shadow-sm"></div>
+                <span className="text-xs font-bold text-slate-700">Standard</span>
+            </button>
 
-                        {/* Option 3: Parchment */}
-                        <button 
-                            onClick={() => setTextureStyle('Parchment')}
-                            className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${textureStyle === 'Parchment' ? 'border-blue-600 bg-[#fffbf0]' : 'border-slate-200 bg-[#fffbf0] hover:border-slate-300'}`}
-                        >
-                            <div className="w-12 h-12 rounded-full shadow-sm border border-stone-300 bg-[#f5e6d3]"></div>
-                            <span className="text-xs font-bold text-slate-700">Parchment</span>
-                        </button>
+            {/* Option 2: Gold Foil */}
+            <button 
+                onClick={() => setTextureStyle('Gold')}
+                className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 overflow-hidden ${textureStyle === 'Gold' ? 'border-blue-600' : 'border-slate-200 hover:border-slate-300'}`}
+            >
+                {/* Visual Preview of Gold Gradient */}
+                <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-yellow-600 via-yellow-200 to-yellow-600"></div>
+                <div className="w-12 h-12 rounded-full shadow-sm bg-gradient-to-br from-yellow-500 via-yellow-200 to-yellow-500 border border-yellow-600"></div>
+                <span className="text-xs font-bold text-slate-700 relative z-10">Gold Foil</span>
+            </button>
 
-                        {/* Option 4: Official (Guilloche) */}
-                        <button 
-                            onClick={() => setTextureStyle('Guilloche')}
-                            className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${textureStyle === 'Guilloche' ? 'border-blue-600' : 'border-slate-200 hover:border-slate-300'}`}
-                        >
-                            <div className="w-12 h-12 rounded-full shadow-sm border-2 border-slate-300 bg-slate-50 flex items-center justify-center">
-                                <ShieldCheck className="w-6 h-6 text-slate-300" />
-                            </div>
-                            <span className="text-xs font-bold text-slate-700">Official</span>
-                        </button>
-                    </div>
+            {/* Option 3: Parchment */}
+            <button 
+                onClick={() => setTextureStyle('Parchment')}
+                className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${textureStyle === 'Parchment' ? 'border-blue-600 bg-[#fffbf0]' : 'border-slate-200 bg-[#fffbf0] hover:border-slate-300'}`}
+            >
+                <div className="w-12 h-12 rounded-full shadow-sm border border-stone-300 bg-[#f5e6d3]"></div>
+                <span className="text-xs font-bold text-slate-700">Parchment</span>
+            </button>
+
+            {/* Option 4: Official (Guilloche) */}
+            <button 
+                onClick={() => setTextureStyle('Guilloche')}
+                className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${textureStyle === 'Guilloche' ? 'border-blue-600' : 'border-slate-200 hover:border-slate-300'}`}
+            >
+                <div className="w-12 h-12 rounded-full shadow-sm border-2 border-slate-300 bg-slate-50 flex items-center justify-center">
+                    <ShieldCheck className="w-6 h-6 text-slate-300" />
                 </div>
-            )}
+                <span className="text-xs font-bold text-slate-700">Official</span>
+            </button>
+
+        </div>
+    </div>
+)}
 
             {/* TAB 3: AI REGENERATION */}
-            {activeTab === 'ai' && (
+{activeTab === 'ai' && (
                 <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-2">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
                         ✨ AI Instructions
                     </label>
                     
+                    {/* Changed from 'flex gap-2' (Row) to 'space-y-3' (Column) */}
                     <div className="space-y-3">
+                        
+                        {/* 1. The New Large Text Area */}
                         <textarea 
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
@@ -625,6 +636,7 @@ const handleDownloadPDF = async () => {
                             className="w-full h-32 p-4 text-slate-700 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm leading-relaxed resize-none shadow-sm outline-none"
                         />
 
+                        {/* 2. The Button (Now full width or right aligned) */}
                         <div className="flex justify-end">
                             <button 
                                 onClick={() => handleGenerate()} 
@@ -635,6 +647,7 @@ const handleDownloadPDF = async () => {
                                 Update Certificate
                             </button>
                         </div>
+
                     </div>
                     
                     {errorMessage && <p className="text-red-500 text-xs mt-2">{errorMessage}</p>}
@@ -660,13 +673,6 @@ const handleDownloadPDF = async () => {
          currentName={result?.recipient_name_placeholder || ""}
          onSaveSingle={handleSaveSingle}
          onSaveBulk={handleSaveBulk}
-      />
-
-      {/* Pricing Modal for Non-Pro Logo Access */}
-      <PricingModal 
-         isOpen={isPricingOpen} 
-         onClose={() => setIsPricingOpen(false)} 
-         reason="free_limit"
       />
 
     </div>

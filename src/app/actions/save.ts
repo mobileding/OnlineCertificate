@@ -4,7 +4,14 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-// Admin Client (for Guest saves)
+// 1. DEFINE RULES
+const TIER_LIMITS = {
+  GUEST: 5,
+  VERIFIED: 10,
+  PRO: 10000
+};
+
+// Admin Client (Bypasses RLS for Guest saves)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -13,42 +20,57 @@ const supabaseAdmin = createClient(
 export async function saveCertificate(data: any, isBulk = false) {
   const cookieStore = await cookies();
   
-  // 1. Try to get the current user
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // Ignored for read-only actions
-          }
-        },
+        getAll() { return cookieStore.getAll() },
+        setAll(cookiesToSet) { try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) } catch { } },
       },
     }
   );
 
+  // 2. Identify User
   const { data: { user } } = await supabase.auth.getUser();
 
-  // === 2. GUEST LOGIC (Not Logged In) ===
-  if (!user) {
-    // Growth Hook: Limit Check
-    if (isBulk && Array.isArray(data) && data.length > 5) {
-        return { success: false, error: "GuestLimit", message: "Guests can only bulk upload 5 names. Please sign up for more!" };
-    }
+  // 3. DETERMINE LIMIT (The Security Check)
+  let allowedLimit = TIER_LIMITS.GUEST; // Default to 5
 
-    // Insert Data
-    // FIX 1: Added ': any' type definition here
+  if (user) {
+      // Fetch profile to see if Pro or Verified
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_tier, account_status, is_email_verified')
+        .eq('id', user.id)
+        .single();
+
+      const isPro = profile?.subscription_tier === 'pro' && profile?.account_status === 'active';
+      // User is verified if Profile says so OR Supabase Auth says so
+      const isVerified = profile?.is_email_verified || user.email_confirmed_at;
+
+      if (isPro) {
+          allowedLimit = TIER_LIMITS.PRO;
+      } else if (isVerified) {
+          allowedLimit = TIER_LIMITS.VERIFIED;
+      }
+  }
+
+  // 4. CHECK THE COUNT
+  const itemsToSave = isBulk && Array.isArray(data) ? data : [data];
+  
+  if (itemsToSave.length > allowedLimit) {
+      return { 
+          success: false, 
+          error: "LimitExceeded", 
+          message: `Limit exceeded. You are trying to save ${itemsToSave.length}, but your limit is ${allowedLimit}.` 
+      };
+  }
+
+  // === 5. GUEST PATH (Use Admin Client) ===
+  if (!user) {
     let query: any = supabaseAdmin.from('certificates').insert(data).select('id, verification_code');
     
-    // IMPORTANT: Only use .single() if it is NOT a bulk operation
     if (!isBulk) {
         query = query.single();
     }
@@ -57,7 +79,6 @@ export async function saveCertificate(data: any, isBulk = false) {
 
     if (error) return { success: false, error: error.message };
     
-    // Return appropriate format
     if (isBulk) {
         return { success: true, guest: true, count: Array.isArray(savedData) ? savedData.length : 0 };
     } else {
@@ -65,23 +86,18 @@ export async function saveCertificate(data: any, isBulk = false) {
     }
   }
 
-  // === 3. USER LOGIC (Logged In) ===
+  // === 6. USER PATH (Use Auth Client) ===
   
-  // Prepare Data: We must inject 'issuer_id' into the payload
+  // FIX: Change 'issuer_id' to 'user_id' so it matches your database!
   let finalData;
   if (isBulk && Array.isArray(data)) {
-      // Map over array to add ID to every item
-      finalData = data.map(item => ({ ...item, issuer_id: user.id }));
+      finalData = data.map(item => ({ ...item, user_id: user.id }));
   } else {
-      // Add ID to single object
-      finalData = { ...data, issuer_id: user.id };
+      finalData = { ...data, user_id: user.id };
   }
 
-  // Insert Data
-  // FIX 2: Added ': any' type definition here as well
   let query: any = supabase.from('certificates').insert(finalData).select('id, verification_code');
 
-  // IMPORTANT: Only use .single() if it is NOT a bulk operation
   if (!isBulk) {
       query = query.single();
   }
@@ -90,5 +106,5 @@ export async function saveCertificate(data: any, isBulk = false) {
 
   if (error) return { success: false, error: error.message };
   
-  return { success: true, guest: false };
+  return { success: true, guest: false, code: isBulk ? null : savedData.verification_code };
 }

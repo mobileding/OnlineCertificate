@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
-import { Loader2, Mail, Lock } from "lucide-react";
+import { Loader2, Mail, Lock, UserPlus, CheckCircle } from "lucide-react";
 import Link from "next/link";
 
+// Reusing your Google Icon for consistency
 function GoogleIcon() {
   return (
     <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -17,19 +18,19 @@ function GoogleIcon() {
   );
 }
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false); // New state for success view
   const [message, setMessage] = useState<{ text: string; type: "error" | "success" } | null>(null);
-  const router = useRouter();
-
+  
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignUp = async () => {
     setLoading(true);
     setMessage(null);
     try {
@@ -46,18 +47,26 @@ export default function LoginPage() {
     }
   };
 
-  const handleLogin = async () => {
+  const handleEmailSignUp = async () => {
     setLoading(true);
     setMessage(null);
 
     try {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            // Redirect them back to login or dashboard after they click the email link
+            emailRedirectTo: `${window.location.origin}/auth/callback`, 
+          }
         });
+        
         if (error) throw error;
-        router.push("/"); 
-        router.refresh();
+        
+        // Show success state
+        setIsSuccess(true);
+        setMessage({ text: "Account created! Please check your email.", type: "success" });
+
     } catch (err: any) {
       setMessage({ text: err.message, type: "error" });
     } finally {
@@ -65,24 +74,46 @@ export default function LoginPage() {
     }
   };
 
+  // === SUCCESS VIEW (After clicking Sign Up) ===
+  if (isSuccess) {
+      return (
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+            <div className="bg-white max-w-sm w-full p-8 rounded-2xl shadow-xl border border-slate-100 text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">Check your inbox</h1>
+                <p className="text-slate-500 text-sm mb-6">
+                    We've sent a confirmation link to <strong>{email}</strong>. Please click the link to activate your account.
+                </p>
+                <Link href="/login" className="text-blue-600 font-bold hover:underline text-sm">
+                    Back to Sign In
+                </Link>
+            </div>
+        </div>
+      );
+  }
+
+  // === FORM VIEW ===
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="bg-white max-w-sm w-full p-8 rounded-2xl shadow-xl border border-slate-100">
         
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Welcome Back</h1>
-          <p className="text-slate-500 text-sm mt-1">Sign in to issue verified certificates</p>
+          <h1 className="text-2xl font-bold text-slate-900">Create Account</h1>
+          <p className="text-slate-500 text-sm mt-1">Start issuing verified certificates today</p>
         </div>
 
         <div className="space-y-4">
           
+          {/* Google Button */}
           <button 
-            onClick={handleGoogleLogin}
+            onClick={handleGoogleSignUp}
             disabled={loading}
             className="w-full bg-white border border-slate-200 text-slate-700 py-2.5 rounded-lg font-bold hover:bg-slate-50 transition-all flex justify-center items-center gap-2 mb-2"
           >
              <GoogleIcon />
-             Sign in with Google
+             Sign up with Google
           </button>
 
           <div className="relative my-4">
@@ -113,7 +144,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                placeholder="••••••••"
+                placeholder="Create a password"
               />
             </div>
           </div>
@@ -125,24 +156,20 @@ export default function LoginPage() {
           )}
 
           <button 
-            onClick={handleLogin}
+            onClick={handleEmailSignUp}
             disabled={loading}
             className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-bold hover:bg-black transition-all flex justify-center items-center gap-2"
           >
-            {loading ? <Loader2 className="animate-spin w-4 h-4" /> : "Sign In"}
+            {loading ? <Loader2 className="animate-spin w-4 h-4" /> : "Create Account"}
           </button>
 
-          {/* === LINK TO SIGN UP PAGE === */}
-          <Link 
-            href="/signup"
-            className="block w-full text-center text-slate-500 hover:text-slate-800 text-xs font-bold py-2 transition-all"
-          >
-            Don't have an account? Sign up
-          </Link>
-
-          <Link href="/" className="block text-center text-xs text-slate-400 hover:text-slate-600 mt-2">
-            Back to Home
-          </Link>
+          {/* Link to Login */}
+          <div className="text-center mt-4">
+             <span className="text-xs text-slate-500">Already have an account? </span>
+             <Link href="/login" className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline">
+                Sign In
+             </Link>
+          </div>
 
         </div>
       </div>

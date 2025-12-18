@@ -3,65 +3,64 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-const FREE_LIMIT = parseInt(process.env.NEXT_PUBLIC_FREE_CERT_LIMIT || '50');
+const TIER_LIMITS = {
+  GUEST: { BATCH_LIMIT: 5, CAN_UPLOAD_CSV: false },
+  VERIFIED: { BATCH_LIMIT: 10, CAN_UPLOAD_CSV: false },
+  PRO: { BATCH_LIMIT: 10000, CAN_UPLOAD_CSV: true }
+};
 
 export async function getUserLimits() {
-  const cookieStore = await cookies(); // Added await for Next.js 15 support
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // Ignored for read-only actions
-          }
-        },
+        getAll() { return cookieStore.getAll() },
+        setAll(cookiesToSet) { try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) } catch { } },
       },
     }
   );
 
   const { data: { user } } = await supabase.auth.getUser();
 
+  // === SCENARIO 1: GUEST ===
   if (!user) {
     return { 
+      tier: 'guest',
       isLoggedIn: false, 
-      count: 0, 
-      limit: FREE_LIMIT,
-      canSave: false, // Cannot save if not logged in
-      reason: "Please log in to save certificates."
+      canSave: true, // <--- ADDED THIS BACK
+      batchLimit: TIER_LIMITS.GUEST.BATCH_LIMIT,
+      canUploadCsv: TIER_LIMITS.GUEST.CAN_UPLOAD_CSV,
     };
   }
-  
-  // 1. Count the user's saved certificates
-  const { count } = await supabase
-    .from('certificates')
-    .select('*', { count: 'exact', head: true }) 
-    .eq('user_id', user.id);
 
-  const currentCount = count || 0;
-  const canSave = currentCount < FREE_LIMIT;
+  // === SCENARIO 2: CHECK PROFILE ===
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('account_status, is_email_verified, subscription_tier') 
+    .eq('id', user.id)
+    .single();
+
+  const isPro = profile?.subscription_tier === 'pro' && profile?.account_status === 'active';
   
-  let reason = "";
-  if (!canSave) {
-    reason = `You have reached the free tier limit of ${FREE_LIMIT} certificates. Upgrade to save more!`;
-  } else if (currentCount > FREE_LIMIT - 5) {
-     reason = `You have ${FREE_LIMIT - currentCount} saves remaining in the free tier.`;
+  if (isPro) {
+      return {
+        tier: 'pro',
+        isLoggedIn: true,
+        canSave: true, // <--- ADDED THIS BACK (Crucial for the button)
+        batchLimit: TIER_LIMITS.PRO.BATCH_LIMIT, 
+        canUploadCsv: TIER_LIMITS.PRO.CAN_UPLOAD_CSV,
+      };
   }
-  
+
+  // === SCENARIO 3: VERIFIED ===
   return {
+    tier: 'verified',
     isLoggedIn: true,
-    count: currentCount,
-    limit: FREE_LIMIT,
-    canSave,
-    reason
+    canSave: true, // <--- ADDED THIS BACK
+    batchLimit: TIER_LIMITS.VERIFIED.BATCH_LIMIT,
+    canUploadCsv: TIER_LIMITS.VERIFIED.CAN_UPLOAD_CSV,
   };
 }
