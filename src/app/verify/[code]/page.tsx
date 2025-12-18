@@ -1,18 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 import { CheckCircle, Calendar, User, FileText, Hash, Stamp, ShieldCheck, Building2, Quote } from 'lucide-react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
+// Initialize Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Helper to ensure valid accent color
+// Helper to ensure valid accent color for the bottom strip
 function getAccentColor(color: string | null) {
   if (!color || color.length < 4 || color.includes('bg-')) return '#2563eb'; 
   return color.trim();
 }
 
+// Fetch data from Supabase
 async function getCertificateData(code: string) {
   const { data: cert, error } = await supabase
     .from('certificates')
@@ -34,21 +37,17 @@ async function getCertificateData(code: string) {
 }
 
 export default async function VerifyPage({ params }: { params: Promise<{ code: string }> }) {
+  // Await params for Next.js 15+ compatibility
   const { code } = await params;
   const data = await getCertificateData(code);
 
+  // === KEY CHANGE: Use Next.js native 404 handling ===
+  // This triggers the not-found.tsx file we designed previously
   if (!data) {
-    return (
-      <div className="min-h-screen bg-stone-100 flex flex-col items-center justify-center p-4 font-mono">
-        <div className="bg-white p-8 border-2 border-stone-300 border-dashed text-center max-w-md w-full">
-           <div className="w-16 h-16 bg-stone-200 mx-auto mb-4 flex items-center justify-center text-stone-400">?</div>
-           <h1 className="text-xl font-bold text-stone-800 uppercase">Record Not Found</h1>
-           <p className="text-stone-500 mt-2 text-sm">ID: {code} does not exist.</p>
-        </div>
-      </div>
-    );
+    notFound(); 
   }
 
+  // Handle Issuer Data safely
   const issuer = data.profiles as any; 
   const isGuest = !issuer;
   
@@ -115,7 +114,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
                 </div>
             </div>
 
-            {/* Course Title Section (A+ Removed) */}
+            {/* Course Title Section */}
             <div className="p-8">
                 <div className="w-full border border-stone-300 bg-white shadow-sm p-10 text-center">
                      <p className="text-3xl md:text-4xl font-bold text-stone-900 leading-tight">
@@ -124,11 +123,11 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
                 </div>
             </div>
 
-            {/* Comments Section (Renamed to "Official Remarks") */}
+            {/* Official Remarks (Lined Paper Effect) */}
             {data.action_text && (
                 <div className="px-8 pb-8">
                     <div className="bg-[#fffdf5] border border-stone-200 p-6 relative">
-                        {/* Lined Paper Effect */}
+                        {/* CSS Pattern for Lines */}
                         <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-10" 
                              style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px)', backgroundSize: '100% 2rem' }}>
                         </div>
@@ -186,6 +185,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Identity Check */}
                 <div className={`p-4 rounded-lg border ${!isGuest && issuer.is_email_verified ? 'bg-green-50 border-green-100' : 'bg-slate-50 border-slate-100'}`}>
                     <div className="flex items-center gap-2 mb-1">
                         <User size={16} className={!isGuest && issuer.is_email_verified ? 'text-green-600' : 'text-slate-400'} />
@@ -196,6 +196,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
                     </p>
                 </div>
 
+                {/* Organization Check */}
                 <div className={`p-4 rounded-lg border ${!isGuest && issuer.is_org_verified ? 'bg-blue-50 border-blue-100' : 'bg-slate-50 border-slate-100'}`}>
                     <div className="flex items-center gap-2 mb-1">
                         <Building2 size={16} className={!isGuest && issuer.is_org_verified ? 'text-blue-600' : 'text-slate-400'} />
