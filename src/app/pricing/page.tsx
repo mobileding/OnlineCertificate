@@ -4,17 +4,16 @@ import { Check, ShieldCheck, Zap, X, Mail, UploadCloud, LayoutDashboard, Image a
 import { createBrowserClient } from "@supabase/ssr";
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react'; // <--- Suspense imported here
 import Link from 'next/link';
 
-export default function PricingPage() {
+// 1. Rename your main component to "PricingContent"
+function PricingContent() {
   const searchParams = useSearchParams();
   const isSuccess = searchParams.get('success') === 'true';
-  
+   
   const [loading, setLoading] = useState<string | null>(null);
-  // State to track if user is 'guest', 'pro', or 'elite'
   const [userTier, setUserTier] = useState<string>('guest'); 
-
   const router = useRouter(); 
 
   useEffect(() => {
@@ -23,7 +22,7 @@ export default function PricingPage() {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
-      
+       
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
@@ -50,7 +49,7 @@ export default function PricingPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 plan: plan,
-                isUpgrade: userTier === 'pro' && plan === 'elite' // Only flag upgrade if moving Pro -> Elite
+                isUpgrade: userTier === 'pro' && plan === 'elite'
             }),
         });
 
@@ -88,7 +87,7 @@ export default function PricingPage() {
           <Link href="/" className="underline font-bold ml-2">Go to Dashboard &rarr;</Link>
         </div>
       )}
-      
+       
       <div className="max-w-4xl mx-auto text-center mb-16">
         <h1 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Simple, Transparent Pricing</h1>
         <p className="text-slate-500 max-w-2xl mx-auto text-lg">
@@ -129,7 +128,7 @@ export default function PricingPage() {
                 </li>
             </ul>
           </div>
-          
+           
           <Link href="/" className="w-full py-2.5 rounded-lg border-2 border-slate-100 font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all text-center block text-sm">
             Use Free Generator
           </Link>
@@ -137,7 +136,7 @@ export default function PricingPage() {
 
         {/* === TIER 2: PRO ($6) === */}
         <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-2xl relative overflow-hidden text-white flex flex-col transform md:-translate-y-4 md:scale-105 z-10">
-          
+           
           {(userTier !== 'pro' && userTier !== 'elite') && (
             <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
                 Most Popular
@@ -151,7 +150,7 @@ export default function PricingPage() {
             <p className="text-4xl font-bold mt-4 text-white">$6 <span className="text-sm font-normal text-slate-400">/mo</span></p>
             <p className="text-xs text-slate-400 mt-2">For professionals & small biz.</p>
           </div>
-          
+           
           <div className="flex-grow">
              <ul className="space-y-4 mb-8">
                 <li className="flex gap-3 text-sm text-slate-200 font-medium">
@@ -176,7 +175,7 @@ export default function PricingPage() {
                 </li>
              </ul>
           </div>
-          
+           
           <button 
             onClick={() => handleCheckout('pro')}
             disabled={loading !== null || userTier === 'pro' || userTier === 'elite'}
@@ -199,7 +198,7 @@ export default function PricingPage() {
                 ? 'bg-purple-50 border-purple-200 shadow-purple-100' 
                 : 'bg-white border-purple-100' 
             }`}>
-          
+           
           <div className="mb-4">
             <h3 className="text-lg font-bold text-purple-900 flex items-center gap-2">
                 <Crown size={20} className="text-purple-600"/> Elite
@@ -228,7 +227,7 @@ export default function PricingPage() {
                 </li>
             </ul>
           </div>
-          
+           
           <button 
             onClick={() => handleCheckout('elite')}
             // Disable if it is already Elite (current)
@@ -247,5 +246,14 @@ export default function PricingPage() {
 
       </div>
     </div>
+  );
+}
+
+// 2. Export the wrapper that includes Suspense
+export default function PricingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading Pricing...</div>}>
+      <PricingContent />
+    </Suspense>
   );
 }
