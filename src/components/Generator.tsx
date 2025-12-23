@@ -288,6 +288,24 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
                     verifiable certificates
                 </Link>{' '} with AI in seconds. Every award includes a secure <strong>QR code</strong> and is stored permanently in the cloud.
              </p>
+
+
+<div className="relative max-w-2xl mx-auto w-full group">
+
+
+{/* === THE BACKGROUND STAMP === */}
+  {/* === THE BACKGROUND STAMP === */}
+<div className="absolute 
+    -bottom-[200px] 
+    -right-[100px] 
+    z-0 pointer-events-none select-none opacity-[0.12] mix-blend-multiply hidden md:block">
+    
+    <img 
+      src="/original.jpg" 
+      alt="Stamp Decor"
+      className="w-[500px] h-auto object-contain rotate-[-12deg]"
+    />
+</div>
              
              <div className="relative z-10 bg-white border-2 border-slate-200 rounded-xl shadow-xl shadow-slate-200/50 p-2 group">
                  <textarea
@@ -317,6 +335,16 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
                      </button>
                  </div>
              </div>
+
+             </div>
+
+
+
+
+
+
+
+
              <div className="grid md:grid-cols-3 gap-8 text-left max-w-3xl mx-auto border-t border-slate-200 pt-10 mt-16">
                   <div className="flex gap-4 items-start">
                       <div className="bg-purple-100 p-3 rounded-lg text-purple-600 shrink-0"><PenTool size={24} /></div>
