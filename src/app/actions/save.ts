@@ -89,12 +89,31 @@ export async function saveCertificate(data: any, isBulk = false) {
   // === 6. USER PATH (Use Auth Client) ===
   
   // FIX: Change 'issuer_id' to 'user_id' so it matches your database!
-  let finalData;
+//  let finalData;
+//  if (isBulk && Array.isArray(data)) {
+//      finalData = data.map(item => ({ ...item, user_id: user.id }));
+//  } else {
+//      finalData = { ...data, user_id: user.id };
+//  }
+
+
+
+let finalData;
+
   if (isBulk && Array.isArray(data)) {
-      finalData = data.map(item => ({ ...item, user_id: user.id }));
+      finalData = data.map(item => ({ 
+          ...item, 
+          issuer_id: user.id,      // <--- CHANGED: Matches your DB schema
+          user_email: user.email   // <--- ADDED: Filling this column since you have it
+      }));
   } else {
-      finalData = { ...data, user_id: user.id };
+      finalData = { 
+          ...data, 
+          issuer_id: user.id,      // <--- CHANGED: Matches your DB schema
+          user_email: user.email   // <--- ADDED: Filling this column since you have it
+      };
   }
+
 
   let query: any = supabase.from('certificates').insert(finalData).select('id, verification_code');
 

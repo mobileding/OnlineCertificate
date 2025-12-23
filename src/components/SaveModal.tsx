@@ -1,209 +1,266 @@
-"use client";
-
-import { X, Upload, FileSpreadsheet, Loader2, Save, Trash2, Crown, Lock } from "lucide-react";
-import { useState, useEffect } from "react"; 
-import { getUserLimits } from "../app/actions/user"; 
-import { PricingModal } from "./PricingModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { useState, useRef } from "react";
+import { Save, Upload, FileText, X, Check, AlertCircle, Trash2, Crown } from "lucide-react";
 
 interface SaveModalProps {
   isOpen: boolean;
   onClose: () => void;
+  currentName: string;
   onSaveSingle: (name: string) => void;
   onSaveBulk: (names: string[]) => void;
-  currentName: string;
+  userTier: 'guest' | 'free' | 'pro' | 'elite';
 }
 
-export function SaveModal({ isOpen, onClose, onSaveSingle, onSaveBulk, currentName }: SaveModalProps) {
-  const [mode, setMode] = useState<'manual' | 'csv'>('manual');
+export function SaveModal({ isOpen, onClose, currentName, onSaveSingle, onSaveBulk, userTier }: SaveModalProps) {
+  const [activeTab, setActiveTab] = useState<'single' | 'bulk'>('single');
+  const [singleName, setSingleName] = useState(currentName);
   
-  const [manualText, setManualText] = useState("");
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [previewNames, setPreviewNames] = useState<string[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  
-  // Default is null (Loading)
-  const [userRules, setUserRules] = useState<any>(null);
-  
-  const [pricingState, setPricingState] = useState<{isOpen: boolean, reason: "guest_limit" | "free_limit"}>({
-      isOpen: false,
-      reason: "guest_limit"
-  });
+  // Bulk State
+  const [bulkNames, setBulkNames] = useState<string[]>([]);
+  const [bulkInput, setBulkInput] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-        setManualText(currentName);
-        setCsvFile(null);
-        setPreviewNames([]);
-        setMode('manual');
-        setUserRules(null); // Force loading state
+  // === HANDLERS ===
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-        // Fetch limits
-        getUserLimits().then((data) => {
-            setUserRules(data);
-        });
-    }
-  }, [isOpen, currentName]);
-
-  if (!isOpen) return null;
-
-  // Defaults
-  const limit = userRules?.batchLimit ?? 5;
-  const canUploadCsv = userRules?.canUploadCsv ?? false;
-  const isPro = userRules?.tier === 'pro';
-  const currentTier = userRules?.tier ? userRules.tier.charAt(0).toUpperCase() + userRules.tier.slice(1) : 'Loading...';
-
-  const parseNames = (text: string) => {
-      return text.split(/[\n,]/).map(n => n.trim()).filter(n => n.length > 0);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      // Simple CSV parser: split by newline, clean up commas/quotes
+      const names = text.split('\n')
+        .map(line => line.replace(/["',]/g, '').trim()) // Remove quotes/commas
+        .filter(line => line.length > 0 && line.toLowerCase() !== 'name'); // Remove empty lines & header
+      
+      setBulkNames(prev => [...prev, ...names]);
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be selected again
+    e.target.value = '';
   };
 
-  const checkLimits = (count: number) => {
-      if (count > limit) {
-          setPricingState({ 
-            isOpen: true, 
-            reason: userRules?.tier === 'guest' ? "guest_limit" : "free_limit" 
-          });
-          return false;
-      }
-      return true;
+
+// Add this near the other useState hooks
+  const [manualInput, setManualInput] = useState("");
+
+const handleAddManual = () => {
+    if (!manualInput.trim()) return;
+    setBulkNames(prev => [...prev, manualInput.trim()]);
+    setManualInput(""); // Clear the box
   };
 
-  const handleManualProcess = async () => {
-      const names = parseNames(manualText);
-      if (names.length === 0) return;
-      if (!checkLimits(names.length)) return;
-
-      setIsProcessing(true);
-      if (names.length === 1) onSaveSingle(names[0]); 
-      else onSaveBulk(names); 
-      setIsProcessing(false);
+  const removeName = (index: number) => {
+    setBulkNames(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      setCsvFile(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const text = event.target?.result as string;
-        const names = text.split(/\r?\n/).map(n => n.trim()).filter(n => n.length > 0 && n !== "Name");
-        setPreviewNames(names);
-      };
-      reader.readAsText(file);
-  };
 
-  const clearFile = () => { setCsvFile(null); setPreviewNames([]); };
-
-  const handleStandardProcess = async () => {
-    if (!previewNames.length) return;
-    setIsProcessing(true);
-    onSaveBulk(previewNames);
-    setIsProcessing(false);
-  };
-
-  const manualCount = parseNames(manualText).length;
-
+  // === RENDER ===
   return (
-    <>
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            
-            {/* Header: Title + Tier Info */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-100 shrink-0 bg-slate-50">
-              <div className="flex flex-col">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    Save Certificate
-                    {isPro && <span className="bg-amber-100 text-amber-600 text-[10px] px-2 py-0.5 rounded-full uppercase flex items-center gap-1"><Crown size={10} /> Pro</span>}
-                  </h3>
-                  {/* === CLEAN STATUS LINE === */}
-                  <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium mt-1">
-                     <span className="uppercase tracking-wide text-slate-400">Current Plan:</span>
-                     <span className={isPro ? "text-amber-600 font-bold" : "text-slate-700"}>{currentTier}</span>
-                     <span className="text-slate-300">|</span>
-                     <span className="uppercase tracking-wide text-slate-400">Batch Limit:</span>
-                     <span className="text-slate-700">{isPro ? "Unlimited" : limit}</span>
-                  </div>
-              </div>
-              <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex border-b border-slate-100 shrink-0">
-              <button onClick={() => setMode('manual')} className={`flex-1 py-3 text-sm font-medium transition-colors ${mode === 'manual' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-slate-500 hover:bg-slate-50'}`}>Manual Entry</button>
-              <button 
-                onClick={() => canUploadCsv ? setMode('csv') : setPricingState({ isOpen: true, reason: 'free_limit' })} 
-                className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${mode === 'csv' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50/50' : 'text-slate-500 hover:bg-slate-50'} ${!canUploadCsv ? 'opacity-60 cursor-not-allowed bg-slate-50' : ''}`}
-              >
-                 {!canUploadCsv && <Lock size={12} />} Upload CSV
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto">
-              {mode === 'manual' ? (
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase">Recipient Names</label>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${manualCount > limit ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-500'}`}>
-                            {manualCount} / {isPro ? '∞' : limit}
-                        </span>
-                    </div>
-                    <textarea 
-                        autoFocus
-                        value={manualText}
-                        onChange={(e) => setManualText(e.target.value)}
-                        className="w-full p-3 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none h-40 resize-none"
-                        placeholder={`John Doe\nJane Smith`}
-                    />
-                  </div>
-
-                  <button 
-                    onClick={handleManualProcess}
-                    disabled={manualCount === 0 || isProcessing}
-                    className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-black transition-all flex items-center justify-center gap-2 disabled:bg-slate-400 disabled:cursor-not-allowed"
-                  >
-                    {isProcessing ? <Loader2 className="animate-spin" /> : <Save size={18} />} 
-                    {manualCount > 1 ? `Generate ${manualCount} Certificates` : "Save Certificate"}
-                  </button>
-                  
-                  {manualCount > limit && (
-                      <p className="text-xs text-red-500 text-center cursor-pointer hover:underline" onClick={() => setPricingState({isOpen: true, reason: 'free_limit'})}>
-                          Limit Reached. Click to Upgrade.
-                      </p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {!csvFile ? (
-                      <label className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center hover:bg-slate-50 hover:border-blue-300 transition-all cursor-pointer block group">
-                        <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                            <FileSpreadsheet className="w-6 h-6 text-blue-500" />
-                        </div>
-                        <p className="text-sm font-bold text-slate-700 mb-1">Click to Upload CSV</p>
-                        <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
-                      </label>
-                  ) : (
-                      <div className="space-y-3">
-                          <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-200">
-                              <p className="text-xs font-bold text-slate-900 truncate">{csvFile.name}</p>
-                              <button onClick={clearFile} className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded"><Trash2 size={16} /></button>
-                          </div>
-                          <button onClick={handleStandardProcess} disabled={!csvFile || isProcessing} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
-                            {isProcessing ? <Loader2 className="animate-spin" /> : <Upload size={18} />} Process Bulk CSV
-                          </button>
-                      </div>
-                  )}
-                </div>
-              )}
-            </div>
-            
-          </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] bg-white p-0 overflow-hidden gap-0 rounded-2xl border-0 shadow-2xl">
+        
+        {/* Header with Tabs */}
+        <div className="bg-slate-50 border-b border-slate-100 p-2 flex gap-2">
+          <button 
+            onClick={() => setActiveTab('single')}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'single' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Single Certificate
+          </button>
+          <button 
+            onClick={() => setActiveTab('bulk')}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${activeTab === 'bulk' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Bulk Create {userTier === 'elite' && <Crown size={12} className="text-purple-600"/>}
+          </button>
         </div>
 
-        <PricingModal 
-            isOpen={pricingState.isOpen} 
-            onClose={() => setPricingState({ ...pricingState, isOpen: false })} 
-            reason={pricingState.reason} 
-        />
-    </>
+        <div className="p-8">
+            {/* === SINGLE TAB === */}
+            {activeTab === 'single' && (
+                <div className="space-y-6">
+                    <div className="text-center">
+                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Save className="w-6 h-6" />
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900">Save to Dashboard</h2>
+                        <p className="text-slate-500 text-sm mt-1">This certificate will be stored securely in your account.</p>
+                    </div>
+
+                    <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Recipient Name</label>
+                        <input 
+                            value={singleName}
+                            onChange={(e) => setSingleName(e.target.value)}
+                            className="w-full p-3 border border-slate-200 rounded-lg font-medium text-slate-900 focus:ring-2 focus:ring-blue-100 outline-none"
+                        />
+                    </div>
+
+                    <button onClick={() => onSaveSingle(singleName)} className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-black transition-all">
+                        Save Certificate
+                    </button>
+                </div>
+            )}
+
+            {/* === BULK TAB === */}
+            {activeTab === 'bulk' && (
+                <div className="space-y-6 animate-in slide-in-from-right-4">
+                    
+                    {/* PRO INTERFACE (SIMPLE) */}
+{/* PRO INTERFACE (SIMPLE + LINE COUNTER) */}
+                    {userTier === 'pro' && (
+                        <>
+                            <div className="flex justify-between items-end mb-2">
+                                <div>
+                                    <h2 className="text-lg font-bold text-slate-900">Quick Batch Upload</h2>
+                                    <p className="text-slate-500 text-xs">Separate names by <strong>Enter</strong> or <strong>Comma</strong>.</p>
+                                </div>
+                                <div className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">
+                                    {/* LIVE COUNTER Logic */}
+                                    {bulkInput.split(/[\n,]+/).filter(n => n.trim().length > 0).length} Names Detected
+                                </div>
+                            </div>
+                            
+                            {/* EDITOR WITH LINE NUMBERS */}
+                            <div className="relative border border-slate-200 rounded-lg overflow-hidden flex h-48 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                                {/* Left: The Counter Gutter */}
+                                <div className="bg-slate-50 text-slate-400 text-right text-sm font-mono p-3 pt-3.5 select-none border-r border-slate-100 w-12 overflow-hidden leading-6">
+                                    {/* Generate numbers based on line count */}
+                                    {Array.from({ length: Math.max(1, bulkInput.split('\n').length) }).map((_, i) => (
+                                        <div key={i}>{i + 1}</div>
+                                    ))}
+                                </div>
+
+                                {/* Right: The Input Area */}
+                                <textarea 
+                                    value={bulkInput}
+                                    onChange={(e) => setBulkInput(e.target.value)}
+                                    placeholder="Christopher&#10;Williams, James&#10;Brown"
+                                    className="flex-1 h-full p-3 text-sm outline-none resize-none leading-6 whitespace-pre"
+                                    spellCheck={false}
+                                />
+                            </div>
+
+                            <div className="bg-slate-50 p-3 rounded-lg flex items-start gap-2 mt-4">
+                                <AlertCircle className="w-4 h-4 text-slate-400 mt-0.5" />
+                                <div className="text-xs text-slate-500">
+                                    <strong>Tip:</strong> Comma-separated lists work too! "Adam, Sarah, Mike" will create 3 separate certificates.
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={() => {
+                                    // === THE LOGIC FIX ===
+                                    // Split by Newline (\n) OR Comma (,)
+                                    const names = bulkInput
+                                        .split(/[\n,]+/)              // Regex: Split on enter or comma
+                                        .map(n => n.trim())           // Clean whitespace
+                                        .filter(n => n.length > 0);   // Remove empty lines
+                                    
+                                    if(names.length > 0) onSaveBulk(names);
+                                }}
+                                disabled={!bulkInput.trim()} 
+                                className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-black transition-all disabled:opacity-50 mt-4"
+                            >
+                                Generate Batch
+                            </button>
+                        </>
+                    )}
+
+                    {/* ELITE INTERFACE (ADVANCED) */}
+                    {userTier === 'elite' && (
+                        <>
+                            <div className="flex items-center justify-between mb-2">
+                                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                    <Crown size={16} className="text-purple-600" /> 
+                                    Advanced Import
+                                </h2>
+                                <span className="text-xs font-bold text-slate-400">{bulkNames.length} names ready</span>
+                            </div>
+
+                            {/* CSV Dropzone */}
+                            {bulkNames.length === 0 ? (
+                                <div 
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer group"
+                                >
+                                    <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-white group-hover:text-purple-600 transition-colors">
+                                        <Upload className="w-6 h-6" />
+                                    </div>
+                                    <p className="text-sm font-bold text-slate-700">Click to upload CSV</p>
+                                    <p className="text-xs text-slate-400 mt-1">or drag and drop file here</p>
+                                    <input 
+                                        type="file" 
+                                        ref={fileInputRef}
+                                        accept=".csv,.txt"
+                                        className="hidden" 
+                                        onChange={handleFileUpload}
+                                    />
+                                </div>
+                            ) : (
+                                // Data Preview Table
+                                <div className="border border-slate-200 rounded-xl overflow-hidden max-h-[240px] flex flex-col">
+                                    <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
+                                        <span className="text-xs font-bold text-slate-500 uppercase">Preview Data</span>
+                                        <button onClick={() => setBulkNames([])} className="text-xs text-red-500 font-bold hover:underline">Clear All</button>
+                                    </div>
+                                    <div className="overflow-y-auto p-0">
+                                        {bulkNames.map((name, i) => (
+                                            <div key={i} className="flex items-center justify-between px-4 py-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 group">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-[10px] font-bold">
+                                                        {i + 1}
+                                                    </div>
+                                                    <span className="text-sm text-slate-700 font-medium">{name}</span>
+                                                </div>
+                                                <button onClick={() => removeName(i)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+{/* Manual Add Line */}
+                            <div className="flex gap-2 mt-4">
+                                <input 
+                                    value={manualInput}
+                                    onChange={(e) => setManualInput(e.target.value)}
+                                    placeholder="Or type a name manually..." 
+                                    className="flex-1 p-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault(); // Stop form submission if any
+                                            handleAddManual();
+                                        }
+                                    }}
+                                />
+                                <button 
+                                    onClick={handleAddManual}
+                                    className="bg-purple-100 text-purple-700 px-4 rounded-lg font-bold text-lg hover:bg-purple-200 transition-all shadow-sm active:scale-95"
+                                >
+                                    +
+                                </button>
+                            </div>
+
+                            <button 
+                                onClick={() => onSaveBulk(bulkNames)}
+                                disabled={bulkNames.length === 0} 
+                                className="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                <Sparkles size={16} /> Generate {bulkNames.length} Certificates
+                            </button>
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
+
+// Helper icon import (Sparkles was missing from top import)
+import { Sparkles } from "lucide-react";

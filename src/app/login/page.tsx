@@ -2,26 +2,20 @@
 
 import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { useRouter } from "next/navigation";
-import { Loader2, Mail, Lock } from "lucide-react";
+import { Loader2, Mail, ArrowRight, CheckCircle, Lock } from "lucide-react";
 import Link from "next/link";
-
-function GoogleIcon() {
-  return (
-    <svg className="w-5 h-5" viewBox="0 0 24 24">
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05" />
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-    </svg>
-  );
-}
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: "error" | "success" } | null>(null);
+  
+  // UI Toggles
+  const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
+  const [usePassword, setUsePassword] = useState(false);
+
   const router = useRouter();
 
   const supabase = createBrowserClient(
@@ -29,40 +23,31 @@ export default function LoginPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    setMessage(null);
+  // 1. MAGIC LINK HANDLER
+  const handleMagicLink = async () => {
+    if (!email) { setMessage({ text: "Please enter your email", type: "error" }); return; }
+    setLoading(true); setMessage(null);
     try {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-            },
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (error) throw error;
-    } catch (err: any) {
-        setMessage({ text: err.message, type: "error" });
-        setLoading(false);
-    }
+        setIsMagicLinkSent(true);
+        setMessage({ text: "Magic link sent! Check your email.", type: "success" });
+    } catch (err: any) { setMessage({ text: err.message, type: "error" }); } 
+    finally { setLoading(false); }
   };
 
-  const handleLogin = async () => {
-    setLoading(true);
-    setMessage(null);
-
+  // 2. PASSWORD HANDLER
+  const handlePasswordLogin = async () => {
+    setLoading(true); setMessage(null);
     try {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        router.push("/"); 
-        router.refresh();
-    } catch (err: any) {
-      setMessage({ text: err.message, type: "error" });
-    } finally {
-      setLoading(false);
-    }
+        router.push("/"); router.refresh();
+    } catch (err: any) { setMessage({ text: err.message, type: "error" }); } 
+    finally { setLoading(false); }
   };
 
   return (
@@ -71,80 +56,75 @@ export default function LoginPage() {
         
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-slate-900">Welcome Back</h1>
-          <p className="text-slate-500 text-sm mt-1">Sign in to issue verified certificates</p>
+          <p className="text-slate-500 text-sm mt-1">
+             {usePassword ? "Sign in with your password" : "Sign in via Magic Link"}
+          </p>
         </div>
 
-        <div className="space-y-4">
-          
-          <button 
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            className="w-full bg-white border border-slate-200 text-slate-700 py-2.5 rounded-lg font-bold hover:bg-slate-50 transition-all flex justify-center items-center gap-2 mb-2"
-          >
-             <GoogleIcon />
-             Sign in with Google
-          </button>
-
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
-            <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-400 font-bold">Or with email</span></div>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Email</label>
-            <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-              <input 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                placeholder="name@example.com"
-              />
+        {isMagicLinkSent ? (
+            /* SUCCESS VIEW */
+            <div className="text-center animate-in fade-in zoom-in duration-300">
+                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2">Check your inbox</h3>
+                <p className="text-slate-500 text-sm mb-6">We sent a login link to <br/> <b>{email}</b></p>
+                <button onClick={() => { setIsMagicLinkSent(false); setMessage(null); }} className="text-sm font-bold text-slate-400 hover:text-slate-600">
+                    &larr; Use a different email
+                </button>
             </div>
-          </div>
-          
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Password</label>
-            <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-              <input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                placeholder="••••••••"
-              />
+        ) : (
+            /* LOGIN FORM */
+            <div className="space-y-4">
+            
+            {/* Email Field (Always visible) */}
+            <div>
+                <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Email</label>
+                <div className="relative">
+                    <Mail className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="name@example.com" />
+                </div>
             </div>
-          </div>
+            
+            {/* Password Field (Only if usePassword is true) */}
+            {usePassword && (
+                 <div className="animate-in slide-in-from-top-2 duration-300">
+                    <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Password</label>
+                    <div className="relative">
+                        <Lock className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="••••••••" />
+                    </div>
+                </div>
+            )}
 
-          {message && (
-            <div className={`p-3 rounded-lg text-xs font-medium ${message.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
-              {message.text}
+            {message && <div className={`p-3 rounded-lg text-xs font-medium ${message.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>{message.text}</div>}
+
+            {/* Dynamic Action Button */}
+            <button 
+                onClick={usePassword ? handlePasswordLogin : handleMagicLink}
+                disabled={loading}
+                className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-bold hover:bg-black transition-all flex justify-center items-center gap-2"
+            >
+                {loading ? <Loader2 className="animate-spin w-4 h-4" /> : (
+                    usePassword ? "Sign In with Password" : (
+                        <>Send Magic Link <ArrowRight className="w-4 h-4 opacity-70"/></>
+                    )
+                )}
+            </button>
+
+            {/* Toggle Link */}
+            <div className="text-center pt-2">
+                <button 
+                    onClick={() => { setUsePassword(!usePassword); setMessage(null); }}
+                    className="text-xs text-slate-400 hover:text-slate-600 underline"
+                >
+                    {usePassword ? "I want to use a magic link instead" : "I have a password, let me use it"}
+                </button>
             </div>
-          )}
 
-          <button 
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-bold hover:bg-black transition-all flex justify-center items-center gap-2"
-          >
-            {loading ? <Loader2 className="animate-spin w-4 h-4" /> : "Sign In"}
-          </button>
 
-          {/* === LINK TO SIGN UP PAGE === */}
-          <Link 
-            href="/signup"
-            className="block w-full text-center text-slate-500 hover:text-slate-800 text-xs font-bold py-2 transition-all"
-          >
-            Don't have an account? Sign up
-          </Link>
-
-          <Link href="/" className="block text-center text-xs text-slate-400 hover:text-slate-600 mt-2">
-            Back to Home
-          </Link>
-
-        </div>
+            </div>
+        )}
       </div>
     </div>
   );

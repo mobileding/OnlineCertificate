@@ -57,9 +57,6 @@ const handleLogout = async () => {
           </a>
           
 {/* NEW LINK */}
-  <Link href="/blog" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5">
-     <BookOpen size={16} /> <span className="hidden sm:inline">Blog</span>
-  </Link>
 
           {/* UPDATED: Points to the Contact Page now */}
           <Link href="/contact" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5">

@@ -2,11 +2,21 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { FileText, Users, ArrowRight, LayoutTemplate, Target } from 'lucide-react';
-
+import { FileText, Users, ArrowRight, LayoutTemplate, Target, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { AdminUserRow } from '../../components/AdminUserRow';
 
-export default async function AdminPage() {
+// --- PAGE COMPONENT ---
+export default async function AdminPage({
+  searchParams,
+}: {
+  // FIX 1: Type searchParams as a Promise
+  searchParams: Promise<{ q?: string; page?: string }>;
+}) {
+  // FIX 2: Await the searchParams before using them
+  const params = await searchParams;
+  const query = params.q || "";
+  const currentPage = Number(params.page) || 1;
+
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,20 +31,35 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  // 1. Fetch profiles
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('*, certificates(count)', { count: 'exact' }) 
-    .order('created_at', { ascending: false });
+  // --- PAGINATION SETTINGS ---
+  const ITEMS_PER_PAGE = 10;
+  const from = (currentPage - 1) * ITEMS_PER_PAGE;
+  const to = from + ITEMS_PER_PAGE - 1;
 
-  // 2. Get quick stats for pages/posts
+  // 1. Fetch profiles with Search & Pagination
+  let profileQuery = supabase
+    .from('profiles')
+    .select('*, certificates(count)', { count: 'exact' });
+
+  // Add Search Filter if exists
+  if (query) {
+    profileQuery = profileQuery.or(`email.ilike.%${query}%,organization_name.ilike.%${query}%`);
+  }
+
+  const { data: profiles, count, error } = await profileQuery
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  const totalPages = count ? Math.ceil(count / ITEMS_PER_PAGE) : 1;
+
+  // 2. Get quick stats
   const { count: templateCount } = await supabase.from('templates').select('*', { count: 'exact', head: true });
   const { count: blogCount } = await supabase.from('posts').select('*', { count: 'exact', head: true });
   
-  // 3. NEW: Get "Completed This Week" stats
+  // 3. Weekly Stats
   const now = new Date();
-  const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); // Set to previous Sunday
-  startOfWeek.setHours(0, 0, 0, 0); // Start of the day
+  const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+  startOfWeek.setHours(0, 0, 0, 0);
 
   const { count: weeklyCount } = await supabase
     .from('seo_missions')
@@ -55,90 +80,107 @@ export default async function AdminPage() {
           <div className="flex gap-3">
              <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm text-sm font-medium flex items-center gap-2">
                 <Users size={16} className="text-slate-400" />
-                {profiles?.length || 0} Users
+                {count || 0} Total Users
              </div>
           </div>
         </div>
 
-        {/* SECTION 1: MANAGEMENT LINKS */}
+        {/* STATS GRID */}
         <div className="grid md:grid-cols-3 gap-6">
-            
-            {/* 1. MISSION CONTROL (Green - Shows Velocity) */}
             <Link href="/admin/tasks" className="group block bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all">
                 <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-                        <Target size={24} />
-                    </div>
-                    {/* UPDATED BADGE: Shows accomplishments this week */}
+                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg"><Target size={24} /></div>
                     <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded flex items-center gap-1">
                         <span className="text-emerald-600">+{weeklyCount || 0}</span> This Week
                     </span>
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-emerald-600 transition-colors">Mission Control</h3>
-                <p className="text-slate-500 text-sm mb-4">Generate keywords, assign tasks, and track your content velocity.</p>
-                <div className="text-emerald-600 text-sm font-bold flex items-center group-hover:underline">
-                    View Tasks <ArrowRight size={16} className="ml-1" />
-                </div>
             </Link>
             
-            {/* 2. SEO TEMPLATES (Purple) */}
             <Link href="/admin/seotemplate" className="group block bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-purple-300 transition-all">
                 <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
-                        <LayoutTemplate size={24} />
-                    </div>
-                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">
-                        {templateCount || 0} Pages
-                    </span>
+                    <div className="p-3 bg-purple-50 text-purple-600 rounded-lg"><LayoutTemplate size={24} /></div>
+                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">{templateCount || 0} Pages</span>
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-purple-600 transition-colors">SEO Templates</h3>
-                <p className="text-slate-500 text-sm mb-4">Create programmatic landing pages (e.g. "Best Dad Certificate").</p>
-                <div className="text-purple-600 text-sm font-bold flex items-center group-hover:underline">
-                    Manage Pages <ArrowRight size={16} className="ml-1" />
-                </div>
             </Link>
 
-            {/* 3. BLOG MANAGER (Blue) */}
             <Link href="/admin/blog" className="group block bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all">
                 <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                        <FileText size={24} />
-                    </div>
-                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">
-                        {blogCount || 0} Posts
-                    </span>
+                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg"><FileText size={24} /></div>
+                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">{blogCount || 0} Posts</span>
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">Blog Manager</h3>
-                <p className="text-slate-500 text-sm mb-4">Write articles, manage drafts, and publish content to the blog.</p>
-                <div className="text-blue-600 text-sm font-bold flex items-center group-hover:underline">
-                    Manage Blog <ArrowRight size={16} className="ml-1" />
-                </div>
             </Link>
-
         </div>
 
-        {/* SECTION 2: USER TABLE */}
+        {/* SECTION 2: USER TABLE WITH SEARCH & PAGINATION */}
         <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Users size={20} /> Master User List
-            </h2>
+            <div className="flex justify-between items-end mb-4">
+                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <Users size={20} /> Master User List
+                </h2>
+                
+                {/* SEARCH BAR */}
+                <form className="relative w-64">
+                    <input 
+                        name="q"
+                        defaultValue={query}
+                        placeholder="Search email or org..." 
+                        className="w-full pl-10 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button type="submit" className="absolute left-3 top-2.5 text-slate-400">
+                        <Search className="w-4 h-4" />
+                    </button>
+                    {/* Reset page to 1 when searching */}
+                    <input type="hidden" name="page" value="1" />
+                </form>
+            </div>
+
             <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                     <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs">User / Email</th>
-                    <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs text-center">Certs Created</th>
-                    <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs w-64">Org Name (Editable)</th>
+                    <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs text-center">Certs</th>
+                    <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs w-64">Org Name (Edit)</th>
                     <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs">Identity</th>
-                    <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs text-right">Business Status</th>
+                    <th className="px-6 py-3 font-semibold text-slate-500 uppercase text-xs text-right">Actions</th>
                 </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                {profiles?.map((profile) => (
-                    <AdminUserRow key={profile.id} profile={profile} />
-                ))}
+                {profiles?.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-8 text-slate-400">No users found.</td></tr>
+                ) : (
+                    profiles?.map((profile) => (
+                        <AdminUserRow key={profile.id} profile={profile} />
+                    ))
+                )}
                 </tbody>
             </table>
+            
+            {/* PAGINATION CONTROLS */}
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-between items-center">
+                <span className="text-xs text-slate-500">
+                    Showing <strong>{from + 1}-{Math.min(to + 1, count || 0)}</strong> of <strong>{count}</strong>
+                </span>
+                
+                <div className="flex gap-2">
+                    <Link 
+                        href={`/admin?page=${currentPage - 1}&q=${query}`}
+                        className={`p-2 rounded hover:bg-white border border-transparent hover:border-slate-200 transition-all ${currentPage <= 1 ? 'pointer-events-none opacity-50' : ''}`}
+                    >
+                        <ChevronLeft size={16} />
+                    </Link>
+                    <span className="text-sm font-bold text-slate-700 py-2 px-2">Page {currentPage}</span>
+                    <Link 
+                        href={`/admin?page=${currentPage + 1}&q=${query}`}
+                        className={`p-2 rounded hover:bg-white border border-transparent hover:border-slate-200 transition-all ${currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''}`}
+                    >
+                        <ChevronRight size={16} />
+                    </Link>
+                </div>
+            </div>
             </div>
         </div>
 

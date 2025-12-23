@@ -2,8 +2,8 @@
 
 import { 
   Loader2, Save, Palette, Type, LayoutTemplate, 
-  Briefcase, Heart, Home, Upload, Check, Sparkles, ShieldCheck, PenTool,
-  AlertCircle, Download, ScrollText, Wand2, Award, Lock, Crown // <--- Crown added
+  Briefcase, Heart, Home, Download, ScrollText, Wand2, Lock, Crown, ImagePlus, Trash2,
+  Sparkles, ShieldCheck, PenTool, AlertCircle 
 } from "lucide-react";
 import Link from 'next/link';
 import { CertificateTemplate } from './CertificateTemplate';
@@ -12,10 +12,10 @@ import { useState, useEffect } from 'react';
 import { getUserLimits } from "../app/actions/user";
 import jsPDF from 'jspdf';
 import { saveCertificate } from "../app/actions/save";
-
 import { SaveModal } from './SaveModal';
 import { SuccessModal } from './SuccessModal';
-import { PricingModal } from './PricingModal'; // <--- 1. Import Pricing Modal
+import { PricingModal } from './PricingModal'; 
+
 
 interface GeneratorProps {
   initialPrompt?: string;
@@ -29,18 +29,16 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
   const [successData, setSuccessData] = useState<any>(null); 
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Tabs for the new Studio Layout
   const [activeTab, setActiveTab] = useState<'design' | 'text' | 'ai' | 'paper'>('ai');
   const [textureStyle, setTextureStyle] = useState('None');
 
   const [userLimitStatus, setUserLimitStatus] = useState<any>({
       canSave: true, 
       reason: "", 
-      isLoggedIn: true,
-      tier: 'guest' // Default
+      isLoggedIn: false,
+      tier: 'guest' 
   });
-  
-  // Certificate Data
+    
   const [result, setResult] = useState<any>(initialData);
   const [customColor, setCustomColor] = useState(initialData?.theme_color || '#2563eb');
   const [customLogo, setCustomLogo] = useState<string | null>(null);
@@ -48,26 +46,47 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
   const [designTheme, setDesignTheme] = useState<"Modern" | "Classic" | "Playful" | "Minimal" | "Gothic">("Modern");
 
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-  const [isPricingOpen, setIsPricingOpen] = useState(false); // <--- 2. State for Pricing Modal
+  const [isPricingOpen, setIsPricingOpen] = useState(false); 
   const [logs, setLogs] = useState<string[]>([]);
 
-  // === EFFECTS ===
+
   useEffect(() => {
     getUserLimits().then(setUserLimitStatus);
   }, []);
 
-  // Presets
+
+
+
+//useEffect(() => {
+//    getUserLimits().then((data) => {
+//        // --- REAL PRODUCTION CODE ---
+//        // setUserLimitStatus(data);
+
+        // --- TESTING MODE: FORCE ELITE ---
+//        setUserLimitStatus({
+//           ...data,
+//          tier: 'elite', // <--- Forced Tier
+//            canSave: true,
+//            isLoggedIn: true
+//       });
+//    });
+//  }, []);
+
+
+
+
   const examples = [
     { label: "Employee Award", value: "Painfree Clinic appreciates Adam Smith for 5 years of dedicated service and hard work.", icon: Briefcase },
     { label: "Volunteer", value: "Michael Johnson has successfully completed 50 hours of community service volunteering.", icon: Heart },
     { label: "Top Tenant", value: "Joseph is awarded Top Tenant of 2024 by First Real Estate Co for consistent payments.", icon: Home }
   ];
 
-  // Helper to check Pro status
-  const isPro = userLimitStatus?.tier === 'pro'; // <--- 3. Check Tier
+  // === PERMISSION LOGIC ===
+  // 1. Is Paid? (Pro OR Elite)
+  // Used for: Enabling Save Button AND Enabling Logo Upload
+  const isPaid = userLimitStatus?.tier === 'pro' || userLimitStatus?.tier === 'elite';
 
   // === HANDLERS ===
-
   const updateField = (field: string, value: string) => {
     setResult((prev: any) => ({ ...prev, [field]: value }));
   };
@@ -75,6 +94,10 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 500 * 1024) { 
+          alert("Logo file is too large! Please use an image under 500KB.");
+          return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => setCustomLogo(reader.result as string);
       reader.readAsDataURL(file);
@@ -132,7 +155,8 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
         theme:                 "Modern",
         theme_color:           customColor,
         verification_code:     formattedId,
-        issue_date:            new Date().toISOString().split('T')[0]
+        issue_date:            new Date().toISOString().split('T')[0],
+        logo_base64:           customLogo 
     };
 
     const response = await saveCertificate(payload, false);
@@ -155,6 +179,7 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
             certificates: [{ name: finalName, id: response.code || formattedId }]
         });
         
+        // Refresh limits if needed (though unlimited for paid usually)
         if (!response.guest) getUserLimits().then(setUserLimitStatus);
     } else {
         alert("Error saving: " + response.error);
@@ -176,7 +201,8 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
         theme:                 "Modern",
         theme_color:           customColor,
         verification_code:     `${generateSegment()}-${generateSegment()}-${generateSegment()}`,
-        issue_date:            new Date().toISOString().split('T')[0]
+        issue_date:            new Date().toISOString().split('T')[0],
+        logo_base64:           customLogo 
     }));
 
     const response = await saveCertificate(payloads, true);
@@ -212,14 +238,10 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
     }
   };
 
-const handleDownloadPDF = async () => {
+  const handleDownloadPDF = async () => {
     const element = document.querySelector('#certificate-preview-container') as HTMLElement;
     if (!element) return;
-
-    // 1. CLONE
     const clone = element.cloneNode(true) as HTMLElement;
-
-    // 2. RESET STYLES
     clone.style.transform = 'scale(1)';
     clone.style.position = 'fixed';
     clone.style.left = '-9999px'; 
@@ -227,11 +249,9 @@ const handleDownloadPDF = async () => {
     clone.style.width = '1123px'; 
     clone.style.height = '794px'; 
     clone.style.zIndex = '-1';
-    
     document.body.appendChild(clone);
 
     try {
-        // 3. CAPTURE
         const canvas = await html2canvas(clone, { 
             scale: 2, 
             useCORS: true, 
@@ -239,163 +259,97 @@ const handleDownloadPDF = async () => {
             windowWidth: 1123,
             windowHeight: 794
         });
-
-        // 4. GENERATE PDF
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [1123, 794] });
         pdf.addImage(imgData, 'PNG', 0, 0, 1123, 794);
         pdf.save(`${result.recipient_name_placeholder || 'certificate'}.pdf`);
-
     } catch (e) {
         console.error(e);
         alert("Error generating PDF");
     } finally {
-        // 5. CLEAN UP
         document.body.removeChild(clone);
     }
   };
 
-  // --- RENDER ---
-
-// 1. HERO VIEW (Empty State)
+  // --- RENDER HERO (Empty State) ---
   if (!result && !initialData) {
-  return (
-<div className="bg-slate-50 font-sans text-slate-900 flex flex-col items-center">
-        
-        <div className="text-center max-w-4xl mx-auto pt-12 pb-20 px-4">
-          
-          <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6">
-            AI-Written. <span className="text-blue-600">Instantly Verified.</span>
-          </h1>
-
-<p className="text-xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-  Generate <strong>free</strong>, <Link 
-        href="/verify" 
-        className="text-blue-600 hover:text-blue-700 hover:underline decoration-blue-300 underline-offset-4 font-semibold transition-all"
-        title="Check a verification code"
-    >
-        verifiable certificates
-    </Link>{' '} with AI in seconds. Every award includes a secure <strong>QR code</strong> and is stored permanently in the cloud.
-</p>
-<div className="max-w-3xl mx-auto mb-16 text-left relative">
-  
-<div className="absolute 
-    -bottom-[200px] 
-    -right-[100px] 
-    z-0 pointer-events-none select-none opacity-[0.12] mix-blend-multiply hidden md:block">
-    
-    <img 
-      src="https://img.favpng.com/11/1/18/logo-organization-food-graphics-rubber-stamp-png-favpng-GR86uuwddk8nzbRiCv0BtpaMd.jpg" 
-      alt="Stamp Decor"
-      className="w-[500px] h-auto object-contain rotate-[-12deg]"
-    />
-</div>
-  <div className="relative z-10 bg-white border-2 border-slate-200 rounded-xl shadow-xl shadow-slate-200/50 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-50 transition-all p-2 group">
-      
-      <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Describe your award (e.g. Employee of the Month for Sarah)..."
-          className="w-full p-4 text-base outline-none resize-none min-h-[120px] rounded-lg text-slate-700 placeholder:text-slate-400 bg-transparent"
-          onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleGenerate(); }}}
-      />
-
-      {errorMessage && (
-          <div className="mx-4 mt-2 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-xs font-bold animate-in slide-in-from-top-1">
-              <AlertCircle className="w-4 h-4" />
-              {errorMessage}
-          </div>
-      )}
-
-      <div className="flex flex-col md:flex-row justify-between items-center px-4 py-3 border-t border-slate-100 gap-4 bg-slate-50/50 rounded-b-lg">
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-              <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px] mr-1">Try:</span>
-              {examples.map((ex, i) => (
-                  <button key={i} onClick={() => { setInput(ex.value); }} className="text-xs font-semibold px-2.5 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 transition-all flex items-center gap-1.5 shadow-sm text-slate-600">
-                      <ex.icon className="w-3 h-3" /> {ex.label}
-                  </button>
-              ))}
-          </div>
-          <button onClick={() => handleGenerate()} disabled={loading || !input.trim()} className="bg-slate-900 text-white px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-black transition-all disabled:opacity-50 w-full md:w-auto justify-center shadow-md">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>} Generate
-          </button>
-      </div>
-  </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 text-left max-w-3xl mx-auto border-t border-slate-200 pt-10">
-              
-              {/* Feature A */}
-              <div className="flex gap-4 items-start">
-                  <div className="bg-purple-100 p-3 rounded-lg text-purple-600 shrink-0">
-                      <PenTool size={24} />
+    return (
+      <div className="bg-slate-50 font-sans text-slate-900 flex flex-col items-center">
+         <div className="text-center max-w-4xl mx-auto pt-12 pb-20 px-4">
+             <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6">
+                AI-Written. <span className="text-blue-600">Instantly Verified.</span>
+             </h1>
+             <p className="text-xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed">
+               Generate <strong>free</strong>, <Link 
+                    href="/verify" 
+                    className="text-blue-600 hover:text-blue-700 hover:underline decoration-blue-300 underline-offset-4 font-semibold transition-all"
+                    title="Check a verification code"
+                >
+                    verifiable certificates
+                </Link>{' '} with AI in seconds. Every award includes a secure <strong>QR code</strong> and is stored permanently in the cloud.
+             </p>
+             
+             <div className="relative z-10 bg-white border-2 border-slate-200 rounded-xl shadow-xl shadow-slate-200/50 p-2 group">
+                 <textarea
+                     value={input}
+                     onChange={(e) => setInput(e.target.value)}
+                     placeholder="Describe your award (e.g. Employee of the Month for Sarah)..."
+                     className="w-full p-4 text-base outline-none resize-none min-h-[120px] rounded-lg text-slate-700 placeholder:text-slate-400 bg-transparent"
+                     onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleGenerate(); }}}
+                 />
+                 {errorMessage && (
+                      <div className="mx-4 mt-2 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-xs font-bold animate-in slide-in-from-top-1">
+                          <AlertCircle className="w-4 h-4" />
+                          {errorMessage}
+                      </div>
+                 )}
+                 <div className="flex flex-col md:flex-row justify-between items-center px-4 py-3 border-t border-slate-100 gap-4 bg-slate-50/50 rounded-b-lg">
+                     <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                         <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px] mr-1">Try:</span>
+                         {examples.map((ex, i) => (
+                             <button key={i} onClick={() => { setInput(ex.value); }} className="text-xs font-semibold px-2.5 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 transition-all flex items-center gap-1.5 shadow-sm text-slate-600">
+                                 <ex.icon className="w-3 h-3" /> {ex.label}
+                             </button>
+                         ))}
+                     </div>
+                     <button onClick={() => handleGenerate()} disabled={loading || !input.trim()} className="bg-slate-900 text-white px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-black transition-all disabled:opacity-50 w-full md:w-auto justify-center shadow-md">
+                         {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>} Generate
+                     </button>
+                 </div>
+             </div>
+             <div className="grid md:grid-cols-3 gap-8 text-left max-w-3xl mx-auto border-t border-slate-200 pt-10 mt-16">
+                  <div className="flex gap-4 items-start">
+                      <div className="bg-purple-100 p-3 rounded-lg text-purple-600 shrink-0"><PenTool size={24} /></div>
+                      <div><h3 className="font-bold text-slate-900">1. Describe It</h3><p className="text-sm text-slate-500">Just type a simple sentence about the achievement.</p></div>
                   </div>
-                  <div>
-                      <h3 className="font-bold text-slate-900">1. Describe It</h3>
-                      <p className="text-sm text-slate-500">Just type a simple sentence about the achievement.</p>
+                  <div className="flex gap-4 items-start">
+                      <div className="bg-blue-100 p-3 rounded-lg text-blue-600 shrink-0"><Sparkles size={24} /></div>
+                      <div><h3 className="font-bold text-slate-900">2. AI Writes It</h3><p className="text-sm text-slate-500">Our engine crafts the perfect professional wording.</p></div>
                   </div>
-              </div>
-
-              {/* Feature B */}
-              <div className="flex gap-4 items-start">
-                  <div className="bg-blue-100 p-3 rounded-lg text-blue-600 shrink-0">
-                      <Sparkles size={24} />
+                  <div className="flex gap-4 items-start">
+                      <div className="bg-green-100 p-3 rounded-lg text-green-600 shrink-0"><ShieldCheck size={24} /></div>
+                      <div><h3 className="font-bold text-slate-900">3. Verify It</h3><p className="text-sm text-slate-500">Includes a unique QR code for permanent proof.</p></div>
                   </div>
-                  <div>
-                      <h3 className="font-bold text-slate-900">2. AI Writes It</h3>
-                      <p className="text-sm text-slate-500">Our engine crafts the perfect professional wording.</p>
-                  </div>
-              </div>
-
-              {/* Feature C */}
-              <div className="flex gap-4 items-start">
-                  <div className="bg-green-100 p-3 rounded-lg text-green-600 shrink-0">
-                      <ShieldCheck size={24} />
-                  </div>
-                  <div>
-                      <h3 className="font-bold text-slate-900">3. Verify It</h3>
-                      <p className="text-sm text-slate-500">Includes a unique QR code for permanent proof.</p>
-                  </div>
-              </div>
-
-          </div>
-        </div>
+             </div>
+         </div>
       </div>
     );
   }
-  
-  // 2. STUDIO VIEW (New Layout)
+   
+  // 2. STUDIO VIEW
   return (
     <div className="flex flex-col min-h-[calc(100vh-64px)] bg-slate-50 font-sans text-slate-900 animate-in fade-in duration-500">
       
-{/* === TOP: CANVAS PREVIEW AREA === */}
-      <div className="w-full bg-slate-100/50 border-b border-slate-200 flex justify-center pt-10 overflow-hidden relative transition-all
-          h-[400px]       /* Mobile: Scale 0.45 */
-          md:h-[520px]    /* Tablet: Scale 0.60 */
-          lg:h-[650px]    /* Laptop: Scale 0.75 */
-          xl:h-[750px]    /* Desktop: Scale 0.90 */
-      ">
-         
-         <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
-         
-         {/* New Button */}
-         <div className="absolute top-4 left-4 z-10">
-             <button onClick={() => setResult(null)} className="bg-white text-slate-500 hover:text-slate-900 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider transition-colors px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50">
-                 <LayoutTemplate className="w-3 h-3" /> New
-             </button>
-         </div>
-
-         {/* CERTIFICATE PREVIEW */}
-         <div 
-            id="certificate-preview-container" 
-            className="shadow-2xl border border-white bg-white origin-top transition-all
-                scale-[0.45]    /* Mobile */
-                md:scale-[0.6]  /* Tablet */
-                lg:scale-[0.75] /* Laptop - Nice and Big */
-                xl:scale-[0.9]  /* Desktop - Almost full size */
-            "
-         >
-            <CertificateTemplate 
+      {/* === TOP: CANVAS PREVIEW AREA === */}
+      <div className="w-full bg-slate-100/50 border-b border-slate-200 flex justify-center pt-10 overflow-hidden relative transition-all h-[400px] md:h-[520px] lg:h-[650px] xl:h-[750px]">
+          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+          <div className="absolute top-4 left-4 z-10">
+              <button onClick={() => setResult(null)} className="bg-white text-slate-500 hover:text-slate-900 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider transition-colors px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50">
+                  <LayoutTemplate className="w-3 h-3" /> New
+              </button>
+          </div>
+          <div id="certificate-preview-container" className="shadow-2xl border border-white bg-white origin-top transition-all scale-[0.45] md:scale-[0.6] lg:scale-[0.75] xl:scale-[0.9]">
+             <CertificateTemplate 
                 data={result} 
                 customColor={customColor}
                 frameStyle={frameStyle}
@@ -403,7 +357,7 @@ const handleDownloadPDF = async () => {
                 designTheme={designTheme}
                 textureStyle={textureStyle} 
             />
-         </div>
+          </div>
       </div>
 
       {/* === MIDDLE: CONTROL BAR === */}
@@ -412,45 +366,44 @@ const handleDownloadPDF = async () => {
             
             {/* Left: Tool Tabs */}
             <div className="flex bg-slate-100 p-1 rounded-lg">
-                <button 
-                    onClick={() => setActiveTab('design')} 
-                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'design' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                >
+                <button onClick={() => setActiveTab('design')} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'design' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
                     <Palette size={14} /> Design
                 </button>
-                <button 
-                    onClick={() => setActiveTab('text')} 
-                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'text' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                >
+                <button onClick={() => setActiveTab('text')} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'text' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
                     <Type size={14} /> Text
                 </button>
-                <button 
-                    onClick={() => setActiveTab('paper')} 
-                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'paper' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                >
+                <button onClick={() => setActiveTab('paper')} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'paper' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
                     <ScrollText size={14} /> Paper
                 </button>
-                <button 
-                    onClick={() => setActiveTab('ai')} 
-                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'ai' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                >
+                <button onClick={() => setActiveTab('ai')} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'ai' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
                     <Wand2 size={14} /> AI
                 </button>
             </div>
 
             {/* Right: Action Buttons */}
             <div className="flex items-center gap-3">
-                <button 
-                    onClick={handleDownloadPDF} 
-                    className="hidden sm:flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all"
-                >
+                {/* VISITOR & EVERYONE: Can Download PDF */}
+                <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all bg-white shadow-sm">
                     <Download size={14} /> PDF
                 </button>
-                <button 
-                    onClick={() => setIsSaveModalOpen(true)}
-                    disabled={userLimitStatus.isLoggedIn && !userLimitStatus.canSave}
-                    className="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-lg text-xs font-bold hover:bg-black transition-all shadow-sm disabled:opacity-50 disabled:bg-red-400"
-                    title={userLimitStatus.isLoggedIn && !userLimitStatus.canSave ? userLimitStatus.reason : "Save"}
+                
+                {/* SAVE BUTTON: REDIRECTS TO PRICING IF NOT PAID */}
+     <button 
+                    onClick={() => {
+                        if (isPaid) {
+                            setIsSaveModalOpen(true);
+                        } else {
+                            // GUEST: OPEN PRICING MODAL (Restored functionality)
+                            setIsPricingOpen(true);
+                        }
+                    }}
+                    // We removed the 'disabled' check for guests so they can always click it
+                    disabled={isPaid && !userLimitStatus.canSave}
+                    className={`flex items-center gap-2 px-5 py-2 rounded-lg text-xs font-bold transition-all shadow-sm disabled:opacity-50 
+                        ${!isPaid
+                            ? 'bg-slate-900 hover:bg-black text-white' // Guest sees standard black button now
+                            : 'bg-slate-900 hover:bg-black text-white disabled:bg-red-400' 
+                        }`}
                 >
                     <Save size={14} /> Save Certificate
                 </button>
@@ -458,14 +411,14 @@ const handleDownloadPDF = async () => {
          </div>
       </div>
 
-      {/* === BOTTOM: INPUT PANEL (Contextual) === */}
+      {/* === BOTTOM: INPUT PANEL === */}
       <div className="bg-slate-50 border-t border-slate-200 p-6 min-h-[220px]">
          <div className="max-w-7xl mx-auto">
             
             {/* TAB 1: DESIGN TOOLS */}
             {activeTab === 'design' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-2">
-                    {/* Colors */}
+                    {/* ... (Keep existing Design controls: Colors, Themes, Frames) ... */}
                     <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Primary Color</label>
                         <div className="flex gap-2 flex-wrap">
@@ -475,24 +428,24 @@ const handleDownloadPDF = async () => {
                             <input type="color" value={customColor} onChange={(e) => setCustomColor(e.target.value)} className="w-8 h-8 rounded-full overflow-hidden border-0 p-0 cursor-pointer" />
                         </div>
                     </div>
-
-                    {/* Themes */}
                     <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Theme</label>
                         <div className="flex flex-wrap gap-2">
-                            {['Modern', 'Classic', 'Playful', 'Minimal', 'Gothic'].map((theme) => (
-                                <button key={theme} onClick={() => setDesignTheme(theme as any)} className={`px-3 py-1.5 text-xs font-bold rounded border transition-all ${designTheme === theme ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
-                                    {theme}
-                                </button>
+{['Modern', 'Classic', 'Playful', 'Minimal', 'Gothic', 'Elegant', 'Tech', 'Bold'].map((theme) => (
+    <button 
+        key={theme} 
+        onClick={() => setDesignTheme(theme as any)} 
+        className={`px-3 py-1.5 text-xs font-bold rounded border transition-all ${designTheme === theme ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+    >
+        {theme}
+    </button>
                             ))}
                         </div>
                     </div>
-
-                    {/* Frames */}
                     <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Frame</label>
                         <div className="flex flex-wrap gap-2">
-                            {['Default', 'Thick', 'Double', 'Dashed', 'None'].map((style) => (
+                            {['Default', 'Thick', 'Double', 'Dashed', 'None', 'Nest', 'Elegant'].map((style) => (
                                 <button key={style} onClick={() => setFrameStyle(style)} className={`px-3 py-1.5 text-xs font-bold rounded border transition-all ${frameStyle === style ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
                                     {style}
                                 </button>
@@ -513,37 +466,42 @@ const handleDownloadPDF = async () => {
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Organization</label>
                         <input className="w-full p-2 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-blue-100 outline-none" value={result.organization_name || ''} onChange={(e) => updateField('organization_name', e.target.value)} />
                     </div>
-
                     <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Signature</label>
-                        <input 
-                            className="w-full p-2 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-blue-100 outline-none" 
-                            placeholder="(Leave blank to sign manually)"
-                            value={result.signature_text || ''} 
-                            onChange={(e) => updateField('signature_text', e.target.value)} 
-                        />
+                        <input className="w-full p-2 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-blue-100 outline-none" placeholder="(Leave blank to sign manually)" value={result.signature_text || ''} onChange={(e) => updateField('signature_text', e.target.value)} />
                     </div>
-
                     <div className="lg:col-span-2">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Message</label>
                         <input className="w-full p-2 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-blue-100 outline-none" value={result.action_text || ''} onChange={(e) => updateField('action_text', e.target.value)} />
                     </div>
                     
-                    {/* === LOGO UPLOAD (LOCKED FOR NON-PRO) === */}
+                    {/* === LOGO UPLOAD === */}
                     <div>
                         <div className="flex justify-between items-center mb-1">
                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Upload Logo</label>
-                             {!isPro && <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1"><Crown size={10} /> PRO</span>}
+                             {/* Badge changes based on if user has access */}
+                             {!isPaid && <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1"><Crown size={10} /> PRO</span>}
                         </div>
                         
-                        {isPro ? (
-                            // PRO USER VIEW
-                            <div className="flex gap-2 items-center">
-                                <input type="file" accept="image/*" onChange={handleLogoUpload} className="block w-full text-xs text-slate-500 file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-                                {customLogo && <button onClick={() => setCustomLogo(null)} className="text-xs text-red-500 font-bold hover:underline">Remove</button>}
+                        {isPaid ? (
+                            // UNLOCKED FOR PRO & ELITE
+                            <div className="space-y-2">
+                                {!customLogo ? (
+                                    <label className="flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-300 rounded-lg text-xs font-bold text-slate-500 hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all">
+                                        <ImagePlus size={16} /> Choose Logo
+                                        <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                                    </label>
+                                ) : (
+                                    <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 p-2 rounded-lg">
+                                        <img src={customLogo} className="w-8 h-8 object-contain rounded bg-white" alt="Logo" />
+                                        <span className="text-xs text-blue-800 font-bold flex-1 truncate">Logo Uploaded</span>
+                                        <button onClick={() => setCustomLogo(null)} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={14}/></button>
+                                    </div>
+                                )}
+                                <p className="text-[10px] text-slate-400">Max size 500KB</p>
                             </div>
                         ) : (
-                            // GUEST/FREE VIEW (LOCKED)
+                            // LOCKED FOR GUEST
                             <button 
                                 onClick={() => setIsPricingOpen(true)}
                                 className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 rounded-lg text-xs font-bold text-slate-400 hover:border-amber-300 hover:text-amber-600 hover:bg-amber-50 transition-all"
@@ -563,49 +521,14 @@ const handleDownloadPDF = async () => {
             {/* TAB 4: PAPER TEXTURES */}
             {activeTab === 'paper' && (
                 <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-4 text-center">
-                        Select Paper Material
-                    </label>
-                    
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-4 text-center">Select Paper Material</label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {/* Option 1: Standard */}
-                        <button 
-                            onClick={() => setTextureStyle('None')}
-                            className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${textureStyle === 'None' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
-                        >
-                            <div className="w-12 h-12 bg-white border border-slate-200 rounded-full shadow-sm"></div>
-                            <span className="text-xs font-bold text-slate-700">Standard</span>
-                        </button>
-
-                        {/* Option 2: Gold Foil */}
-                        <button 
-                            onClick={() => setTextureStyle('Gold')}
-                            className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 overflow-hidden ${textureStyle === 'Gold' ? 'border-blue-600' : 'border-slate-200 hover:border-slate-300'}`}
-                        >
-                            <div className="absolute inset-0 opacity-10 bg-gradient-to-br from-yellow-600 via-yellow-200 to-yellow-600"></div>
-                            <div className="w-12 h-12 rounded-full shadow-sm bg-gradient-to-br from-yellow-500 via-yellow-200 to-yellow-500 border border-yellow-600"></div>
-                            <span className="text-xs font-bold text-slate-700 relative z-10">Gold Foil</span>
-                        </button>
-
-                        {/* Option 3: Parchment */}
-                        <button 
-                            onClick={() => setTextureStyle('Parchment')}
-                            className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${textureStyle === 'Parchment' ? 'border-blue-600 bg-[#fffbf0]' : 'border-slate-200 bg-[#fffbf0] hover:border-slate-300'}`}
-                        >
-                            <div className="w-12 h-12 rounded-full shadow-sm border border-stone-300 bg-[#f5e6d3]"></div>
-                            <span className="text-xs font-bold text-slate-700">Parchment</span>
-                        </button>
-
-                        {/* Option 4: Official (Guilloche) */}
-                        <button 
-                            onClick={() => setTextureStyle('Guilloche')}
-                            className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${textureStyle === 'Guilloche' ? 'border-blue-600' : 'border-slate-200 hover:border-slate-300'}`}
-                        >
-                            <div className="w-12 h-12 rounded-full shadow-sm border-2 border-slate-300 bg-slate-50 flex items-center justify-center">
-                                <ShieldCheck className="w-6 h-6 text-slate-300" />
-                            </div>
-                            <span className="text-xs font-bold text-slate-700">Official</span>
-                        </button>
+                        {['None', 'Gold', 'Parchment', 'Guilloche'].map((style) => (
+                            <button key={style} onClick={() => setTextureStyle(style)} className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${textureStyle === style ? 'border-blue-600 bg-blue-50/50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                                <div className={`w-12 h-12 rounded-full shadow-sm border ${style === 'None' ? 'bg-white' : style === 'Gold' ? 'bg-yellow-200' : style === 'Parchment' ? 'bg-orange-100' : 'bg-slate-50'}`}></div>
+                                <span className="text-xs font-bold text-slate-700">{style}</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
             )}
@@ -613,10 +536,7 @@ const handleDownloadPDF = async () => {
             {/* TAB 3: AI REGENERATION */}
             {activeTab === 'ai' && (
                 <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                        ✨ AI Instructions
-                    </label>
-                    
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">✨ AI Instructions</label>
                     <div className="space-y-3">
                         <textarea 
                             value={input}
@@ -624,50 +544,29 @@ const handleDownloadPDF = async () => {
                             placeholder="Describe exactly how you want the certificate to sound..."
                             className="w-full h-32 p-4 text-slate-700 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm leading-relaxed resize-none shadow-sm outline-none"
                         />
-
                         <div className="flex justify-end">
-                            <button 
-                                onClick={() => handleGenerate()} 
-                                disabled={loading} 
-                                className="bg-blue-600 text-white px-8 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm"
-                            >
-                                {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>} 
-                                Update Certificate
+                            <button onClick={() => handleGenerate()} disabled={loading} className="bg-blue-600 text-white px-8 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm">
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>} Update Certificate
                             </button>
                         </div>
                     </div>
-                    
                     {errorMessage && <p className="text-red-500 text-xs mt-2">{errorMessage}</p>}
-                    
-                    <p className="text-xs text-slate-400 mt-3 italic">
-                        Tip: You can say things like "Make it sound like a pirate" or "Write a formal legal document."
-                    </p>
                 </div>
             )}
 
          </div>
       </div>
 
-      <SuccessModal 
-         isOpen={!!successData} 
-         onClose={() => setSuccessData(null)} 
-         data={successData} 
-      />
-       
-      <SaveModal 
-         isOpen={isSaveModalOpen} 
-         onClose={() => setIsSaveModalOpen(false)}
-         currentName={result?.recipient_name_placeholder || ""}
-         onSaveSingle={handleSaveSingle}
-         onSaveBulk={handleSaveBulk}
-      />
-
-      {/* Pricing Modal for Non-Pro Logo Access */}
-      <PricingModal 
-         isOpen={isPricingOpen} 
-         onClose={() => setIsPricingOpen(false)} 
-         reason="free_limit"
-      />
+      <SuccessModal isOpen={!!successData} onClose={() => setSuccessData(null)} data={successData} />
+<SaveModal 
+    isOpen={isSaveModalOpen} 
+    onClose={() => setIsSaveModalOpen(false)} 
+    currentName={result?.recipient_name_placeholder || ""} 
+    onSaveSingle={handleSaveSingle} 
+    onSaveBulk={handleSaveBulk} 
+    userTier={userLimitStatus.tier}  // <--- ADD THIS LINE
+/>
+      <PricingModal isOpen={isPricingOpen} onClose={() => setIsPricingOpen(false)} reason="free_limit" />
 
     </div>
   );

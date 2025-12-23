@@ -3,7 +3,6 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Award } from "lucide-react";
-// Import the new table
 import { DashboardTable } from '../../components/DashboardTable'; 
 
 export default async function DashboardPage() {
@@ -19,17 +18,33 @@ export default async function DashboardPage() {
     }
   );
 
+  // 1. Check Auth
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) {
     redirect("/login");
   }
 
-  // Fetch Certificates
+  // 2. === THE GATEKEEPER ===
+  // Fetch just the subscription tier to check access rights
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('subscription_tier')
+    .eq('id', user.id)
+    .single();
+
+  const isPaid = profile?.subscription_tier === 'pro' || profile?.subscription_tier === 'elite';
+
+  // If they are free, kick them out immediately
+  if (!isPaid) {
+    redirect("/pricing?error=upgrade_required");
+  }
+  // ==========================
+
+  // 3. Fetch Certificates (Only runs if they passed the gatekeeper)
   const { data: certificates } = await supabase
     .from('certificates')
     .select('*')
-    .eq('issuer_id', user.id)
+    .eq('issuer_id', user.id) // Correct column name!
     .order('created_at', { ascending: false });
 
   return (
@@ -47,7 +62,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        {/* The New Table Component */}
+        {/* The Table */}
         {certificates && certificates.length > 0 ? (
           <DashboardTable certificates={certificates} />
         ) : (

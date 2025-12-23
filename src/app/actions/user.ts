@@ -3,10 +3,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+// 1. ADD ELITE DEFINITION HERE
 const TIER_LIMITS = {
-  GUEST: { BATCH_LIMIT: 5, CAN_UPLOAD_CSV: false },
-  VERIFIED: { BATCH_LIMIT: 10, CAN_UPLOAD_CSV: false },
-  PRO: { BATCH_LIMIT: 10000, CAN_UPLOAD_CSV: true }
+  GUEST:    { BATCH_LIMIT: 5,     CAN_UPLOAD_CSV: false },
+  VERIFIED: { BATCH_LIMIT: 10,    CAN_UPLOAD_CSV: false },
+  PRO:      { BATCH_LIMIT: 50,    CAN_UPLOAD_CSV: false }, // Pro gets simple list only
+  ELITE:    { BATCH_LIMIT: 10000, CAN_UPLOAD_CSV: true  }  // Elite gets CSV upload
 };
 
 export async function getUserLimits() {
@@ -30,7 +32,7 @@ export async function getUserLimits() {
     return { 
       tier: 'guest',
       isLoggedIn: false, 
-      canSave: true, // <--- ADDED THIS BACK
+      canSave: true, 
       batchLimit: TIER_LIMITS.GUEST.BATCH_LIMIT,
       canUploadCsv: TIER_LIMITS.GUEST.CAN_UPLOAD_CSV,
     };
@@ -39,27 +41,40 @@ export async function getUserLimits() {
   // === SCENARIO 2: CHECK PROFILE ===
   const { data: profile } = await supabase
     .from('profiles')
-    .select('account_status, is_email_verified, subscription_tier') 
+    .select('account_status, subscription_tier') 
     .eq('id', user.id)
     .single();
 
-  const isPro = profile?.subscription_tier === 'pro' && profile?.account_status === 'active';
-  
-  if (isPro) {
+  const tier = profile?.subscription_tier || 'free';
+  const isActive = profile?.account_status === 'active';
+
+  // === CHECK ELITE ===
+  if (tier === 'elite' && isActive) {
+      return {
+        tier: 'elite',
+        isLoggedIn: true,
+        canSave: true,
+        batchLimit: TIER_LIMITS.ELITE.BATCH_LIMIT, 
+        canUploadCsv: TIER_LIMITS.ELITE.CAN_UPLOAD_CSV,
+      };
+  }
+
+  // === CHECK PRO ===
+  if (tier === 'pro' && isActive) {
       return {
         tier: 'pro',
         isLoggedIn: true,
-        canSave: true, // <--- ADDED THIS BACK (Crucial for the button)
+        canSave: true,
         batchLimit: TIER_LIMITS.PRO.BATCH_LIMIT, 
         canUploadCsv: TIER_LIMITS.PRO.CAN_UPLOAD_CSV,
       };
   }
 
-  // === SCENARIO 3: VERIFIED ===
+  // === SCENARIO 3: FREE / VERIFIED ===
   return {
-    tier: 'verified',
+    tier: 'free', // Changed from 'verified' to match standard naming
     isLoggedIn: true,
-    canSave: true, // <--- ADDED THIS BACK
+    canSave: true,
     batchLimit: TIER_LIMITS.VERIFIED.BATCH_LIMIT,
     canUploadCsv: TIER_LIMITS.VERIFIED.CAN_UPLOAD_CSV,
   };

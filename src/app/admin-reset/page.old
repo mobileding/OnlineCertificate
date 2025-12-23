@@ -1,0 +1,54 @@
+"use client";
+
+import { useState } from "react";
+import { createBrowserClient } from "@supabase/ssr";
+
+export default function AdminReset() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [msg, setMsg] = useState("");
+
+  const handleForceSignup = async () => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    // Because "Confirm Email" is OFF in your dashboard, 
+    // this will log you in immediately!
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      setMsg("Error: " + error.message);
+    } else {
+      setMsg("Success! User created and logged in. You can now go to /");
+    }
+  };
+
+  return (
+    <div className="p-10 bg-white min-h-screen text-slate-900">
+      <h1 className="text-2xl font-bold mb-4">Emergency User Creator</h1>
+      <div className="flex flex-col gap-4 max-w-sm">
+        <input 
+          placeholder="Email" 
+          value={email} 
+          onChange={e => setEmail(e.target.value)} 
+          className="border p-2 rounded"
+        />
+        <input 
+          placeholder="New Password" 
+          value={password} 
+          onChange={e => setPassword(e.target.value)} 
+          className="border p-2 rounded"
+        />
+        <button onClick={handleForceSignup} className="bg-blue-600 text-white p-2 rounded font-bold">
+          Create & Login
+        </button>
+        {msg && <p className="font-bold text-red-600">{msg}</p>}
+      </div>
+    </div>
+  );
+}
