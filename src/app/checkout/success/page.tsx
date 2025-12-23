@@ -6,7 +6,7 @@ import { CheckCircle } from "lucide-react";
 
 // 1. Init Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia", // Use your version
+  apiVersion: "2025-12-15.clover", // Use your version
 });
 
 // 2. Init Supabase Admin (Bypasses security to create tokens)
