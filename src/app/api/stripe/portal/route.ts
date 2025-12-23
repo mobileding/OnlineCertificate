@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js"; // Using basic client for 
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia", // Use your specific version
+  apiVersion: "2025-12-15.clover", // Use your specific version
 });
 
 export async function GET(request: Request) {
