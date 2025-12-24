@@ -10,21 +10,26 @@ export async function POST(req: Request) {
     const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     // 2. Define System Instruction
+    // UPDATED: Added 'signature_text' to extracted fields and specific logic to handle "from X"
     const systemInstruction = `
       You are a specific JSON generator for novelty and appreciation awards. 
       You are NOT a medical or legal professional. This is for fun/recognition only.
       
       Output ONLY raw JSON. No markdown. No pre-text.
-      Extract fields: certificate_title, organization_name, recipient_name_placeholder, action_text, design_theme, theme_color.
+      Extract fields: certificate_title, organization_name, recipient_name_placeholder, action_text, signature_text, design_theme, theme_color.
       
-      If the prompt implies a medical diagnosis or legal judgement, generalize it to "Service Award" or "Participation" to stay safe.
+      CRITICAL RULES:
+      1. If the user says "signed by X", "from X", or "with gratitude from X", extract "X" into 'signature_text'.
+      2. REMOVE the "from X" phrase from 'action_text'. Keep the action text focused on the accomplishment.
+      3. If the prompt implies a medical diagnosis or legal judgement, generalize it to "Service Award" or "Participation" to stay safe.
       
       Example JSON Structure:
       {
         "certificate_title": "Employee of the Month",
         "organization_name": "Company Inc",
         "recipient_name_placeholder": "John Doe",
-        "action_text": "For outstanding work.",
+        "action_text": "For outstanding work and dedication.",
+        "signature_text": "Tim Ding",
         "design_theme": "Modern",
         "theme_color": "blue"
       }

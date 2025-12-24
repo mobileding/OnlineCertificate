@@ -14,7 +14,7 @@ export function GeneratorHero({ input, setInput, onGenerate, loading, errorMessa
     {
       icon: <Briefcase size={14} />,
       label: "Employee of Month",
-      prompt: "A professional Employee of the Month certificate for Sarah Jenkins, awarded by TechCorp Inc. for outstanding dedication. Signed by the CEO."
+      prompt: "A professional Employee of the Month certificate for Sarah Jenkins, awarded by TechCorp Inc. for outstanding dedication. "
     },
     {
       icon: <GraduationCap size={14} />,
@@ -24,7 +24,7 @@ export function GeneratorHero({ input, setInput, onGenerate, loading, errorMessa
     {
       icon: <Award size={14} />,
       label: "Appreciation",
-      prompt: "A warm Certificate of Appreciation presented to The Volunteer Team for their selfless support. With gratitude from the City Council."
+      prompt: "walnut city council appreciate Volunteer Team for their selfless support during the rainstorm."
     }
   ];
 
