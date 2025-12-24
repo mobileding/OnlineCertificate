@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { CertificateTemplate } from "./CertificateTemplate";
-import { CheckCircle, ArrowRight, ChevronLeft, ChevronRight, Palette } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Palette } from "lucide-react";
 
 // --- EXPANDED DEMO DATA ---
 const DEMO_TEMPLATES = [
@@ -151,10 +151,9 @@ export function TemplateGallery() {
         
         {/* Header */}
         <div className="text-center mb-16 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wide mb-6 shadow-sm">
-            <Palette size={14} className="text-blue-600" /> Template Gallery
-          </div>
-          <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
+          
+          {/* UPDATED: font-serif added here */}
+          <h2 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 mb-6 tracking-tight">
             Designed to Impress.
           </h2>
           <p className="text-lg text-slate-600 leading-relaxed">
@@ -221,12 +220,13 @@ export function TemplateGallery() {
                   <div className="p-6 bg-white border-t border-slate-100 relative">
                     <div className="flex justify-between items-center mb-2">
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider">
-                         {template.badge}
+                          {template.badge}
                       </div>
                       <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{template.theme}</div>
                     </div>
                     
-                    <h3 className="font-bold text-slate-900 text-xl group-hover/card:text-blue-600 transition-colors">
+                    {/* UPDATED: font-serif added here */}
+                    <h3 className="font-serif font-bold text-slate-900 text-xl group-hover/card:text-blue-600 transition-colors">
                       {template.label}
                     </h3>
                   </div>

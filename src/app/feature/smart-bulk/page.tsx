@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle, Upload, Zap, FileSpreadsheet, ArrowRight, BrainCircuit, FileText } from "lucide-react";
+import { CheckCircle, Upload, FileSpreadsheet, ArrowRight, BrainCircuit, FileText, Database, ShieldCheck } from "lucide-react";
 
 // HELPER: High-Fidelity Mini Certificate
 const RealMiniCert = ({ name, org, desc, index }: { name: string, org: string, desc: string, index: number }) => (
@@ -9,9 +9,9 @@ const RealMiniCert = ({ name, org, desc, index }: { name: string, org: string, d
         {/* Background Texture Effect */}
         <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
         
-        {/* Badge Watermark */}
+        {/* Badge Watermark (Replaced Zap with ShieldCheck for .ORG feel) */}
         <div className="absolute -bottom-4 -right-4 text-slate-100 rotate-12">
-            <Zap size={80} />
+            <ShieldCheck size={80} />
         </div>
 
         <div className="relative z-10 text-center space-y-2">
@@ -38,8 +38,8 @@ const RealMiniCert = ({ name, org, desc, index }: { name: string, org: string, d
       </div>
 
       {/* Status Pill */}
-      <div className="absolute -top-2 -right-2 bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm border border-green-200 flex items-center gap-1">
-        <CheckCircle size={10} /> PDF #{index}
+      <div className="absolute -top-2 -right-2 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm border border-emerald-200 flex items-center gap-1">
+        <CheckCircle size={10} /> Record #{index}
       </div>
   </div>
 );
@@ -49,26 +49,26 @@ export default function SmartBulkPage() {
     <main className="min-h-screen bg-white">
       
       {/* HERO SECTION */}
-      <section className="py-20 bg-slate-900 text-white text-center px-4">
+      <section className="py-20 bg-slate-900 text-white text-center px-4 border-b border-slate-800">
         <div className="max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold uppercase tracking-wide mb-6">
-            <Zap size={14} className="text-yellow-400" /> Elite Feature
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold uppercase tracking-wide mb-6">
+            <BrainCircuit size={14} className="text-blue-400" /> Institutional Feature
           </div>
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-6 tracking-tight">
             Stop formatting spreadsheets. <br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-              Let our AI map the data.
+            <span className="text-blue-400">
+              Heuristic Data Mapping.
             </span>
           </h1>
-          <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10">
-            The world's first <strong>Smart Bulk Upload</strong>. Upload your messy export from Eventbrite or HR software, and our system figures out the rest.
+          <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+            Upload raw data exports from HR software or event platforms. Our ingestion engine identifies columns automatically, eliminating manual data cleaning.
           </p>
           <div className="flex flex-col md:flex-row gap-4 justify-center">
-            <Link href="/pricing" className="px-8 py-4 bg-blue-600 rounded-full font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/50">
-              Upgrade to Elite
+            <Link href="/pricing" className="px-8 py-4 bg-blue-600 rounded-lg font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/50 text-sm">
+              Upgrade to Institutional
             </Link>
-            <Link href="/dashboard" className="px-8 py-4 bg-slate-800 rounded-full font-bold hover:bg-slate-700 transition-all">
-              Try Demo in Dashboard
+            <Link href="/dashboard" className="px-8 py-4 bg-slate-800 border border-slate-700 rounded-lg font-bold hover:bg-slate-700 transition-all text-sm">
+              View Demo in Dashboard
             </Link>
           </div>
         </div>
@@ -80,44 +80,44 @@ export default function SmartBulkPage() {
           
           {/* Left: The Pain */}
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-slate-900">The Old Way (Standard)</h2>
-            <p className="text-slate-500 text-lg">
-              Most bulk generators act like robots. If your column is named "Student Name" instead of "Name", they crash. You spend hours renaming columns and cleaning data.
+            <h2 className="text-3xl font-serif font-bold text-slate-900">Legacy Import Methods</h2>
+            <p className="text-slate-600 text-lg leading-relaxed">
+              Standard bulk tools rely on rigid templates. If a column is named "Student Name" instead of "Name", the import fails, requiring hours of manual CSV reformatting.
             </p>
-            <ul className="space-y-3">
-              <li className="flex items-center gap-3 text-slate-400">
-                <FileSpreadsheet className="text-red-400" /> Must match template exactly
+            <ul className="space-y-4">
+              <li className="flex items-center gap-3 text-slate-500">
+                <FileSpreadsheet className="text-red-400" size={20} /> <span className="text-sm">Must match template syntax exactly</span>
               </li>
-              <li className="flex items-center gap-3 text-slate-400">
-                <FileSpreadsheet className="text-red-400" /> Breaks on typos
+              <li className="flex items-center gap-3 text-slate-500">
+                <FileSpreadsheet className="text-red-400" size={20} /> <span className="text-sm">Import fails on minor typos</span>
               </li>
-              <li className="flex items-center gap-3 text-slate-400">
-                <FileSpreadsheet className="text-red-400" /> Static text only (same desc for everyone)
+              <li className="flex items-center gap-3 text-slate-500">
+                <FileSpreadsheet className="text-red-400" size={20} /> <span className="text-sm">Static text limitations (same description for all)</span>
               </li>
             </ul>
           </div>
 
-          {/* Right: The Solution (Elite) */}
-          <div className="bg-slate-50 p-8 rounded-2xl border border-slate-200 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <BrainCircuit size={200} />
+          {/* Right: The Solution (Institutional) */}
+          <div className="bg-slate-50 p-8 rounded-lg border border-slate-200 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-[0.05]">
+              <Database size={200} />
             </div>
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">The Elite Way (Smart)</h2>
-            <p className="text-slate-600 text-lg mb-6">
-              Our Smart Engine reads your headers. It knows that "Attendee", "Recipient", and "Student" all mean <strong>Name</strong>. It maps your data automatically.
+            <h2 className="text-3xl font-serif font-bold text-slate-900 mb-4">Heuristic Ingestion</h2>
+            <p className="text-slate-600 text-lg mb-6 leading-relaxed">
+              Our Smart Engine uses pattern recognition to identify headers. It understands that "Attendee", "Recipient", and "Student" all map to the <strong>Recipient Name</strong> field.
             </p>
             <ul className="space-y-4">
               <li className="flex items-center gap-3 font-medium text-slate-800">
-                <CheckCircle className="text-green-500" /> 
-                <span><strong>Auto-Mapping:</strong> Upload messy internal files.</span>
+                <CheckCircle className="text-emerald-600" size={20} /> 
+                <span className="text-sm"><strong>Auto-Mapping:</strong> Accepts non-standard CSV structures.</span>
               </li>
               <li className="flex items-center gap-3 font-medium text-slate-800">
-                <CheckCircle className="text-green-500" /> 
-                <span><strong>Dynamic Text:</strong> Change the "Description" for every single person.</span>
+                <CheckCircle className="text-emerald-600" size={20} /> 
+                <span className="text-sm"><strong>Dynamic Text:</strong> Variablized descriptions for each record.</span>
               </li>
               <li className="flex items-center gap-3 font-medium text-slate-800">
-                <CheckCircle className="text-green-500" /> 
-                <span><strong>Custom Org Names:</strong> Great for agencies issuing for multiple clients.</span>
+                <CheckCircle className="text-emerald-600" size={20} /> 
+                <span className="text-sm"><strong>Multi-Org Support:</strong> Issue from different entities in one batch.</span>
               </li>
             </ul>
           </div>
@@ -129,9 +129,9 @@ export default function SmartBulkPage() {
       <section className="py-20 bg-slate-50 border-y border-slate-200">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">Dynamic Fields: The Game Changer</h2>
+            <h2 className="text-3xl font-serif font-bold text-slate-900 mb-4">Dynamic Field Generation</h2>
             <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-              Paste your raw data, and watch the system generate unique certificates for every single line instantly.
+              The system parses raw data rows to generate unique, verifiable certificates instantly.
             </p>
           </div>
 
@@ -139,35 +139,34 @@ export default function SmartBulkPage() {
             
             {/* 1. LEFT: RAW DATA INPUT */}
             <div className="w-full lg:w-5/12 sticky top-8">
-                <div className="bg-slate-800 rounded-2xl p-1 shadow-2xl">
-                    <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+                <div className="bg-slate-800 rounded-lg p-1 shadow-xl">
+                    <div className="bg-slate-900 rounded-lg p-6 border border-slate-700">
                         <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase">
-                                <FileText size={16} /> Source Input (CSV)
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                <FileText size={14} /> Source Input (CSV)
                             </div>
                             <div className="flex gap-1.5">
-                                <div className="w-2.5 h-2.5 rounded-full bg-red-500/50"></div>
-                                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50"></div>
-                                <div className="w-2.5 h-2.5 rounded-full bg-green-500/50"></div>
+                                <div className="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
+                                <div className="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
                             </div>
                         </div>
 
-                        {/* Raw Data Display - UPDATED: Removed Header Row */}
+                        {/* Raw Data Display */}
                         <div className="font-mono text-xs md:text-sm leading-8 text-slate-300 overflow-x-auto">
                             
                             {/* Row 1 */}
-                            <div className="flex gap-4 hover:bg-slate-800/50 rounded px-1 transition-colors group/line cursor-default">
+                            <div className="flex gap-4 hover:bg-slate-800/50 rounded px-1 transition-colors group/line cursor-default border-b border-slate-800/50">
                                 <span className="text-slate-600 select-none w-4 text-right">1</span> 
                                 <span className="group-hover/line:text-white transition-colors">
-                                    <span className="text-blue-300">sarah smith</span>, <span className="text-orange-300">a1 real estate</span>, <span className="text-green-300">for closing $1m in sales in Q3</span>
+                                    <span className="text-blue-300">sarah smith</span>, <span className="text-orange-300">a1 real estate</span>, <span className="text-emerald-300">for closing $1m in sales in Q3</span>
                                 </span>
                             </div>
 
                             {/* Row 2 */}
-                            <div className="flex gap-4 hover:bg-slate-800/50 rounded px-1 transition-colors group/line cursor-default">
+                            <div className="flex gap-4 hover:bg-slate-800/50 rounded px-1 transition-colors group/line cursor-default border-b border-slate-800/50">
                                 <span className="text-slate-600 select-none w-4 text-right">2</span> 
                                 <span className="group-hover/line:text-white transition-colors">
-                                    <span className="text-blue-300">mike jones</span>, <span className="text-orange-300">big shipbuilder</span>, <span className="text-green-300">for 10 years of loyal service</span>
+                                    <span className="text-blue-300">mike jones</span>, <span className="text-orange-300">big shipbuilder</span>, <span className="text-emerald-300">for 10 years of loyal service</span>
                                 </span>
                             </div>
 
@@ -175,14 +174,14 @@ export default function SmartBulkPage() {
                             <div className="flex gap-4 hover:bg-slate-800/50 rounded px-1 transition-colors group/line cursor-default">
                                 <span className="text-slate-600 select-none w-4 text-right">3</span> 
                                 <span className="group-hover/line:text-white transition-colors">
-                                    <span className="text-blue-300">peter williams</span>, <span className="text-orange-300">pain free clinic</span>, <span className="text-green-300">being very attentive to the patient</span>
+                                    <span className="text-blue-300">peter williams</span>, <span className="text-orange-300">pain free clinic</span>, <span className="text-emerald-300">being very attentive to the patient</span>
                                 </span>
                             </div>
                         </div>
                     </div>
                     {/* Connection Line (Desktop Only) */}
                     <div className="hidden lg:block absolute -right-12 top-1/2 -translate-y-1/2 text-slate-300 z-10">
-                        <ArrowRight size={40} className="animate-pulse" />
+                        <ArrowRight size={40} className="animate-pulse opacity-50" />
                     </div>
                 </div>
             </div>
@@ -213,10 +212,10 @@ export default function SmartBulkPage() {
                     />
 
                     {/* Upsell Card */}
-                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center text-center text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-all cursor-pointer group">
+                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center text-center text-slate-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all cursor-pointer group">
                         <Upload size={32} className="mb-2 group-hover:scale-110 transition-transform" />
                         <span className="font-bold text-sm">Upload Your Own CSV</span>
-                        <span className="text-xs mt-1">Try it in the Dashboard</span>
+                        <span className="text-xs mt-1">Available in Dashboard</span>
                     </div>
 
                 </div>
@@ -228,18 +227,18 @@ export default function SmartBulkPage() {
 
       {/* FAQ */}
       <section className="py-20 px-4 max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold text-slate-900 mb-8 text-center">Frequently Asked Questions</h2>
+        <h2 className="text-2xl font-serif font-bold text-slate-900 mb-8 text-center">Technical FAQ</h2>
         <div className="space-y-6">
-          <div>
-            <h3 className="font-bold text-slate-900">What columns does the Smart Uploader look for?</h3>
-            <p className="text-slate-600 mt-2">
-              It looks for keywords like "Name", "Student", or "Employee" for the recipient. It looks for "Description", "Reason", or "Body" for the text. It auto-detects dates.
+          <div className="p-6 bg-slate-50 rounded-lg border border-slate-100">
+            <h3 className="font-bold text-slate-900 mb-2">How does the heuristic mapping work?</h3>
+            <p className="text-slate-600 text-sm leading-relaxed">
+              The ingestion engine scans the first row of your CSV for semantic matches. It recognizes over 50 variations of common headers (e.g., "Full Name" vs "Student Name") and automatically maps them to the schema.
             </p>
           </div>
-          <div>
-            <h3 className="font-bold text-slate-900">Is this included in the Pro Plan?</h3>
-            <p className="text-slate-600 mt-2">
-              No. The Pro plan ($6/mo) includes standard Bulk Upload (Strict Template). The Smart Auto-Mapping feature is exclusive to the Elite Plan ($22/mo).
+          <div className="p-6 bg-slate-50 rounded-lg border border-slate-100">
+            <h3 className="font-bold text-slate-900 mb-2">Is this included in the Professional Plan?</h3>
+            <p className="text-slate-600 text-sm leading-relaxed">
+              No. The Professional plan ($6/mo) includes standard Bulk Upload which requires strict template adherence. Heuristic Mapping is an advanced feature reserved for the Institutional Plan ($22/mo).
             </p>
           </div>
         </div>

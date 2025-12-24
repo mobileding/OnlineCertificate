@@ -1,75 +1,113 @@
 import Link from "next/link";
-// Added CheckCircle2 to the import list below
-import { ShieldCheck, BadgeCheck, Lock, Search, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, BadgeCheck, Lock, Search, CheckCircle2, QrCode, FileCheck } from "lucide-react";
 
 export function VerificationSection() {
   return (
     <section className="py-24 bg-white border-t border-slate-100">
-      <div className="max-w-7xl mx-auto px-4 grid lg:grid-cols-2 gap-16 items-center">
+      <div className="max-w-7xl mx-auto px-4 grid lg:grid-cols-2 gap-20 items-center">
         
         {/* Left: Text Content */}
         <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wide mb-6">
-                <ShieldCheck size={14} /> Official Registry
+            {/* "Department" Label */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs font-bold uppercase tracking-widest mb-6">
+                <ShieldCheck size={14} /> Public Registry
             </div>
-            <h2 className="text-4xl font-extrabold text-slate-900 mb-6">
-                Trust is good.<br/>
-                Verification is better.
+            
+            {/* Serif Headline */}
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 mb-6 leading-tight">
+                Immutable <br/>
+                Verification Ledger.
             </h2>
-            <p className="text-lg text-slate-600 mb-8 leading-relaxed">
-                In a world of digital fakes, a certificate is only worth as much as its source. 
-                Our platform provides a centralized registry where every issued credential can be instantly audited.
+            
+            <p className="text-lg text-slate-600 mb-8 leading-relaxed max-w-lg">
+                We maintain a centralized, open-access record of every credential issued. 
+                This allows third parties (employers, universities) to audit the validity of a document instantly, without contacting the issuer.
             </p>
             
-            <ul className="space-y-4 mb-10">
-                <li className="flex gap-4">
-                    <div className="bg-slate-100 p-2 rounded-lg h-fit"><BadgeCheck className="text-blue-600" size={20} /></div>
+            <ul className="space-y-6 mb-10">
+                <li className="flex gap-4 items-start">
+                    <div className="mt-1 bg-slate-50 p-2 rounded border border-slate-200 text-slate-700">
+                        <BadgeCheck size={20} />
+                    </div>
                     <div>
-                        <h4 className="font-bold text-slate-900">Issuer Verification</h4>
-                        <p className="text-sm text-slate-500">We verify the identity of organizations (Schools, HR Depts) so you know exactly who signed the award.</p>
+                        <h4 className="font-serif font-bold text-slate-900 text-lg">Institutional Identity</h4>
+                        <p className="text-sm text-slate-600 leading-relaxed mt-1">
+                            We validate the domain ownership of issuing organizations (e.g., tesla.com), attaching a "Verified Issuer" seal to the record.
+                        </p>
                     </div>
                 </li>
-                <li className="flex gap-4">
-                    <div className="bg-slate-100 p-2 rounded-lg h-fit"><Lock className="text-emerald-600" size={20} /></div>
+                <li className="flex gap-4 items-start">
+                    <div className="mt-1 bg-slate-50 p-2 rounded border border-slate-200 text-slate-700">
+                        <Lock size={20} />
+                    </div>
                     <div>
-                        <h4 className="font-bold text-slate-900">Tamper-Proof Records</h4>
-                        <p className="text-sm text-slate-500">Once issued, a certificate's data is frozen in our secure cloud database. It cannot be altered retroactively.</p>
+                        <h4 className="font-serif font-bold text-slate-900 text-lg">Cryptographic Integrity</h4>
+                        <p className="text-sm text-slate-600 leading-relaxed mt-1">
+                            Records are frozen upon issuance. Any attempt to alter the name, date, or title invalidates the unique ID hash.
+                        </p>
                     </div>
                 </li>
             </ul>
 
-            <Link href="/verify" className="inline-flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-all">
-                <Search size={18} /> Try Verifying a Code
+            <Link href="/verify" className="inline-flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-lg font-bold hover:bg-slate-800 transition-all shadow-md">
+                <Search size={18} /> Access Verification Tool
             </Link>
         </div>
 
-        {/* Right: Visual (Mockup) */}
-        <div className="relative bg-slate-50 rounded-2xl border border-slate-200 p-8 shadow-xl">
-            <div className="absolute -top-6 -right-6 bg-white p-4 rounded-xl shadow-lg border border-slate-100 animate-bounce delay-700">
-                <BadgeCheck size={48} className="text-emerald-500" />
-            </div>
+        {/* Right: Visual (Database Record Look) */}
+        <div className="relative">
+            {/* Background blob for depth */}
+            <div className="absolute top-10 right-10 w-full h-full bg-slate-100 rounded-2xl -z-10 transform translate-x-4 translate-y-4"></div>
             
-            <div className="text-center space-y-6">
-                 <div className="w-24 h-24 bg-white rounded-xl mx-auto flex items-center justify-center shadow-sm border border-slate-200">
-                    {/* Mock QR Code */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md mx-auto">
+                
+                {/* Header of the "Card" */}
+                <div className="bg-slate-50 border-b border-slate-100 p-4 flex justify-between items-center">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        <FileCheck size={14} /> Record #882-991
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold uppercase">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                        Active
+                    </div>
+                </div>
 
-<img 
-  src="/qr-code.png" 
-  alt="certificate text tool" 
-  className="w-full rounded-xl border border-slate-200 shadow-lg"
-/>
+                <div className="p-8 text-center space-y-6">
+                     {/* QR Code Container */}
+                     <div className="w-40 h-40 bg-white mx-auto p-2 border-2 border-slate-100 rounded-lg">
+                        {/* If you have the image, use the img tag. 
+                           If the image is missing, the fallback below (QrCode icon) will show nicely.
+                        */}
+                        <div className="w-full h-full bg-slate-900 flex items-center justify-center rounded overflow-hidden relative group">
+                             {/* Fallback Icon (Visible if image fails or while loading) */}
+                             <QrCode className="text-white opacity-20 absolute" size={80} />
+                             
+                             {/* Your Image */}
+                             <img 
+                                src="/qr-code.png" 
+                                alt="Verification QR" 
+                                className="w-full h-full object-cover relative z-10"
+                             />
+                        </div>
+                     </div>
 
+                     <div>
+                        <h3 className="font-serif font-bold text-2xl text-slate-900">Valid Credential</h3>
+                        <p className="text-slate-500 text-sm mt-2">
+                           Issued on <span className="font-mono text-slate-700">Dec 23, 2025</span>
+                        </p>
+                     </div>
 
-
-
-                 </div>
-                 <div>
-                    <div className="h-4 bg-slate-200 rounded w-3/4 mx-auto mb-2"></div>
-                    <div className="h-3 bg-slate-100 rounded w-1/2 mx-auto"></div>
-                 </div>
-                 <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-lg flex items-center justify-center gap-2 text-emerald-800 font-bold text-sm">
-                    <CheckCircle2 size={16} /> Verified: Valid & Active
-                 </div>
+                     <div className="border-t border-slate-100 pt-6">
+                        <div className="flex items-center justify-center gap-2 text-emerald-700 font-bold">
+                            <CheckCircle2 size={20} />
+                            <span>Blockchain ID Match</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-2">
+                            Source: OnlineCertificate.org Registry
+                        </p>
+                     </div>
+                </div>
             </div>
         </div>
 
