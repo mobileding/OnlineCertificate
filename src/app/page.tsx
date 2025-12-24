@@ -1,36 +1,50 @@
 //import { Generator } from "../components/Generator";
+//import { TemplateGallery } from "../components/TemplateGallery"; // <--- Import the Gallery
 //import { HomeContent } from "../components/HomeContent"; 
+// import { Navigation } from "../components/Navigation"; // Assuming you have a Navbar
 
 //export default function HomePage() {
 //  return (
 //    <main className="bg-slate-50 min-h-screen">
-//      {/* 1. The Tool */}
+//      {/* 1. The Main Tool */}
 //      <Generator />
       
-//      {/* 2. The Marketing Specs */}
+//      {/* 2. The Trust Gallery (NEW) */}
+//      <TemplateGallery />
+
+//      {/* 3. The Marketing Specs (Your existing text) */}
 //      <HomeContent />
 //    </main>
 //  );
 //}
 
-
-
 import { Generator } from "../components/Generator";
-import { TemplateGallery } from "../components/TemplateGallery"; // <--- Import the Gallery
-import { HomeContent } from "../components/HomeContent"; 
-// import { Navigation } from "../components/Navigation"; // Assuming you have a Navbar
+import { TemplateGallery } from "../components/TemplateGallery"; 
+import { VerificationSection } from "../components/VerificationSection";
+import { TechSpecs } from "../components/TechSpecs";
+import { MembershipLevels } from "../components/MembershipLevels";
+import { HomeDetails} from "../components/HomeDetails";
 
 export default function HomePage() {
   return (
     <main className="bg-slate-50 min-h-screen">
-      {/* 1. The Main Tool */}
+      
+      {/* 1. Hero & Generator Tool */}
       <Generator />
       
-      {/* 2. The Trust Gallery (NEW) */}
-      <TemplateGallery />
+      {/* 2. Template Gallery (Visual Proof) */}
+      <section id="templates">
+         <TemplateGallery />
+      </section>
 
-      {/* 3. The Marketing Specs (Your existing text) */}
-      <HomeContent />
+      {/* 3. Verification & Trust (Why it makes sense) */}
+      <VerificationSection />
+
+      {/* 4. Technology Specs (Bulk, AI, Cloud) */}
+      <TechSpecs />
+	
+      <HomeDetails />
+     
     </main>
   );
 }
