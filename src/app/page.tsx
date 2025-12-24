@@ -22,7 +22,6 @@ import { Generator } from "../components/Generator";
 import { TemplateGallery } from "../components/TemplateGallery"; 
 import { VerificationSection } from "../components/VerificationSection";
 import { TechSpecs } from "../components/TechSpecs";
-import { MembershipLevels } from "../components/MembershipLevels";
 import { HomeDetails} from "../components/HomeDetails";
 
 export default function HomePage() {
