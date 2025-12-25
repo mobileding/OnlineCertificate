@@ -1,8 +1,8 @@
-2025-12-15.cloverimport { Stripe } from "stripe";
+import { Stripe } from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { MagicLinkSender } from "./MagicLinkSender";
-import { CheckCircle, AlertTriangle } from "lucide-react"; // Added AlertTriangle
+import { CheckCircle, AlertTriangle } from "lucide-react";
 import { revalidatePath } from "next/cache";
 
 // 1. Init Stripe
