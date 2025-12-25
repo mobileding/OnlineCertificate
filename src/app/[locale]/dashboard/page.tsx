@@ -28,16 +28,15 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
     }
   );
 
-  // 1. Check Auth
-  const { data: { user } } = await supabase.auth.getUser();
+const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/${locale}/login`);
   
   if (!user) {
     // FIX: Redirect to the localized login page
     redirect(`/${locale}/login`);
   }
 
-const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/${locale}/login`);
+
 
   // 2. === THE GATEKEEPER (FINAL FIX) ===
   const { data: profile } = await supabase
