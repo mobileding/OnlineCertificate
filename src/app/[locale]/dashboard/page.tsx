@@ -1,15 +1,20 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
+// 1. CHANGE: Use the i18n Link so buttons keep the language
+import { Link } from "@/i18n/routing"; 
 import { Award } from "lucide-react";
-import { DashboardTable } from '@/components/DashboardTable'; // Ensure path is correct
-import { getTranslations } from 'next-intl/server'; // 1. Import this
+import { DashboardTable } from '@/components/DashboardTable'; 
+import { getTranslations } from 'next-intl/server'; 
 
-// 2. Add params to the props
-export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
+interface PageProps {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function DashboardPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'Dashboard' }); // 3. Initialize translations
+  const t = await getTranslations({ locale, namespace: 'Dashboard' });
 
   const cookieStore = await cookies();
 
@@ -25,8 +30,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
   // 1. Check Auth
   const { data: { user } } = await supabase.auth.getUser();
+  
   if (!user) {
-    redirect("/login");
+    // FIX: Redirect to the localized login page
+    redirect(`/${locale}/login`);
   }
 
   // 2. === THE GATEKEEPER ===
@@ -36,10 +43,14 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
     .eq('id', user.id)
     .single();
 
+  // DEBUGGING: This will show up in your Vercel/Terminal logs
+  console.log(`[Dashboard Check] User: ${user.email} | Tier: ${profile?.subscription_tier}`);
+
   const isPaid = profile?.subscription_tier === 'pro' || profile?.subscription_tier === 'elite';
 
   if (!isPaid) {
-    redirect("/pricing?error=upgrade_required");
+    // FIX: Redirect to the localized pricing page
+    redirect(`/${locale}/pricing?error=upgrade_required`);
   }
   // ==========================
 
