@@ -22,18 +22,22 @@ function RedeemLogic() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    const handleSessionFound = async () => {
-        setStatus("Session secured. Redirecting...");
-        
-        // 2. CONSTRUCT LOCALIZED PATH
-        // We preserve the 'new_pro' flag and add the correct language prefix
-        const targetUrl = `/${locale}/dashboard?new_pro=true`;
-        
-        setTimeout(() => {
-            // Force hard reload to ensure all middleware/cookies sync
-            window.location.href = targetUrl;
-        }, 500);
-    };
+// ... inside handleSessionFound ...
+const handleSessionFound = async () => {
+    setStatus("Session secured. Redirecting...");
+    
+    // Use the locale from URL, or default to '' (root) if it's 'en' and you use 'as-needed' strategy
+    const localePrefix = locale && locale !== 'en' ? `/${locale}` : '';
+    
+    // Construct URL with the Grace Period flag
+    const targetUrl = `${localePrefix}/dashboard?new_pro=true`;
+    
+    console.log("Redirecting to:", targetUrl); // Debug log
+
+    setTimeout(() => {
+        window.location.href = targetUrl;
+    }, 500);
+};
 
     // A. STANDARD CHECK
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
