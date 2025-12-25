@@ -23,35 +23,33 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
   const { session_id } = await searchParams;
   const { locale } = await params;
 
-  if (!session_id) return <div>Error: No session ID</div>;
+  if (!session_id) return <div className="p-4 text-red-500">Error: No session ID</div>;
 
-  // 1. Get Payment Details
+  // 1. Verify Payment
   const session = await stripe.checkout.sessions.retrieve(session_id);
   const customerEmail = session.customer_details?.email || session.customer_email;
   const subscriptionId = session.subscription as string;
 
-  if (!customerEmail) return <div>Error: No email found</div>;
+  if (!customerEmail) return <div className="p-4 text-red-500">Error: No email found</div>;
 
   // 2. Determine Site URL
   const isProduction = process.env.NODE_ENV === 'production';
   const siteUrl = isProduction ? 'https://onlinecertificate.org' : 'http://localhost:3000';
 
-  // 3. Generate Link (Also Creates User if needed)
+  // 3. Generate Link (Passing Locale)
   const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
     type: 'magiclink',
     email: customerEmail,
     options: {
-        // Send them to redeem, passing the locale
         redirectTo: `${siteUrl}/auth/redeem?locale=${locale}`
     }
   });
 
   const userId = linkData.user?.id;
 
-  // 4. ATTEMPT UPDATE (Best Effort)
-  // We try to set Pro. Even if the DB overwrites it with Free, 
-  // the Dashboard VIP Pass (Step 1) will let them in anyway.
+  // 4. FORCE DB UPDATE (Upsert)
   if (userId) {
+      console.log(`[Success] Force upgrading ${userId}`);
       await supabaseAdmin.from('profiles').upsert({ 
           id: userId,
           email: customerEmail,
@@ -70,5 +68,5 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
       redirect(linkData.properties.action_link);
   }
 
-  return <div>Redirecting...</div>;
+  return <div className="p-10 text-center">Redirecting securely...</div>;
 }
