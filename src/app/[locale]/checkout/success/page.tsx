@@ -1,13 +1,10 @@
 import { Stripe } from "stripe";
 import { createClient } from "@supabase/supabase-js";
-import { redirect } from "next/navigation";
-import { MagicLinkSender } from "./MagicLinkSender";
-import { CheckCircle, AlertTriangle } from "lucide-react";
-import { revalidatePath } from "next/cache";
+import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 
 // 1. Init Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-apiVersion: "2025-12-15.clover" as any,
+  apiVersion: "2025-02-24.acacia" as any, // or "2025-12-15.clover"
 });
 
 // 2. Init Supabase Admin
@@ -25,104 +22,154 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
   const { session_id } = await searchParams;
   const { locale } = await params;
 
+  // --- DEBUG LOGS ---
+  const logs: string[] = [];
+  const log = (msg: string) => {
+      console.log(msg);
+      logs.push(msg);
+  };
+
+  log("1. Starting Debug Process...");
+
   if (!session_id) {
-     return <div className="p-8 text-center text-red-500">Error: No payment session found.</div>;
+     return <div className="p-10 text-red-500 font-bold">Error: No session_id found in URL.</div>;
   }
 
   // 3. Verify Payment
   let customerEmail = "";
   let subscriptionId = "";
+  let stripeStatus = "Pending";
   
   try {
     const session = await stripe.checkout.sessions.retrieve(session_id);
     customerEmail = session.customer_details?.email || session.customer_email || "";
     subscriptionId = session.subscription as string;
-  } catch (e) {
-    console.error("Stripe Error:", e);
-    return <div>Error verifying payment.</div>;
+    stripeStatus = "Success";
+    log(`2. Stripe Verified. Email: ${customerEmail}`);
+  } catch (e: any) {
+    log(`2. Stripe Error: ${e.message}`);
+    stripeStatus = "Failed";
   }
 
-  if (!customerEmail) return <div>No email found in payment details.</div>;
+  // 4. Find/Create User
+  let userId = "";
+  let userStatus = "Pending";
 
-  // 4. DETERMINE ENVIRONMENT
-  const isProduction = process.env.NODE_ENV === 'production';
-  const siteUrl = isProduction 
-    ? 'https://onlinecertificate.org' 
-    : 'http://localhost:3000';
-
-  // 5. GENERATE MAGIC LINK (Get User ID)
-  // We explicitly ask Supabase to finding or creating the Auth User now.
-  const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-    type: 'magiclink',
-    email: customerEmail,
-    options: {
-        redirectTo: `${siteUrl}/auth/redeem?locale=${locale}`
-    }
-  });
-
-  if (linkError || !linkData.user) {
-    console.error("Auth Error:", linkError);
-    return <div>Error generating login link. Please contact support.</div>;
+  if (customerEmail) {
+      // Try to find user directly first
+      const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
+      const existing = users.find(u => u.email === customerEmail);
+      
+      if (existing) {
+          userId = existing.id;
+          userStatus = "Found Existing";
+          log(`3. User found: ${userId}`);
+      } else {
+          // Attempt to generate link to create them
+          const { data } = await supabaseAdmin.auth.admin.generateLink({
+              type: 'magiclink',
+              email: customerEmail
+          });
+          if (data.user) {
+              userId = data.user.id;
+              userStatus = "Created New";
+              log(`3. User created/linked: ${userId}`);
+          } else {
+              userStatus = "Failed";
+              log("3. Could not find or create user.");
+          }
+      }
   }
 
-  // ============================================================
-  // 6. THE NUCLEAR FIX: UPSERT (Insert or Update)
-  // ============================================================
-  const userId = linkData.user.id;
+  // 5. ATTEMPT DB UPDATE (The Critical Part)
+  let dbStatus = "Pending";
+  let dbError = "";
 
   if (userId) {
-      console.log(`[Success] Processing User ${userId} with Upsert`);
+      log("4. Attempting DB Upsert...");
       
-      // We use upsert so it works whether the profile exists or not.
-      const { error: upsertError } = await supabaseAdmin
+      const { error } = await supabaseAdmin
         .from('profiles')
         .upsert({ 
             id: userId,
-            email: customerEmail, // Ensure email is present if creating new row
+            email: customerEmail,
             subscription_tier: 'pro',
             subscription_id: subscriptionId,
             updated_at: new Date().toISOString()
-        }, { onConflict: 'id' }); // If ID exists, update it. If not, insert.
+        }, { onConflict: 'id' });
 
-      if (upsertError) {
-          console.error("CRITICAL DB ERROR:", upsertError);
-          // We continue anyway so the user sees the success page
+      if (error) {
+          dbStatus = "Failed";
+          dbError = error.message;
+          log(`4. DB Error: ${error.message} (Code: ${error.code})`);
       } else {
-          console.log(`[Success] Profile Upserted Successfully for ${userId}`);
+          dbStatus = "Success";
+          log("4. DB Update Successful!");
       }
-  }
-  // ============================================================
-
-  // 7. CLEAR CACHE
-  revalidatePath('/', 'layout'); 
-  revalidatePath(`/${locale}/dashboard`);
-
-  // 8. EXECUTE REDIRECT
-  const lastSignIn = linkData.user.last_sign_in_at;
-  const createdAt = new Date(linkData.user.created_at || new Date()).getTime();
-  const now = new Date().getTime();
-  const isBrandNew = (now - createdAt) < 5 * 60 * 1000; 
-
-  const shouldAutoLogin = !lastSignIn || isBrandNew;
-
-  if (shouldAutoLogin && linkData.properties?.action_link) {
-      redirect(linkData.properties.action_link);
+  } else {
+      log("4. Skipped DB Update (No User ID)");
   }
 
-  // 9. MANUAL FALLBACK
+  // --- RENDER THE DEBUG UI (NO REDIRECTS) ---
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-        <div className="bg-green-600 p-8 text-center">
-          <CheckCircle className="w-16 h-16 text-white mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white">Payment Successful!</h1>
-          <p className="text-green-100 text-sm mt-2">Your account has been upgraded.</p>
+    <div className="min-h-screen bg-slate-50 p-10 font-mono text-sm">
+      <div className="max-w-2xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
+        
+        <div className="bg-slate-900 text-white p-6 border-b border-slate-700">
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <AlertTriangle className="text-yellow-400" /> Debug Mode
+          </h1>
+          <p className="text-slate-400 mt-1">Session ID: {session_id.slice(0, 15)}...</p>
         </div>
-        <div className="p-8">
-            <p className="text-slate-600 text-sm text-center mb-6">
-                Please check your email <strong>{customerEmail}</strong> for a secure login link.
-            </p>
-            <MagicLinkSender email={customerEmail} />
+
+        <div className="p-6 space-y-6">
+            
+            {/* STEP 1: STRIPE */}
+            <div className="flex items-center justify-between border-b pb-4">
+                <span className="font-bold text-slate-700">1. Verify Payment</span>
+                {stripeStatus === "Success" ? (
+                    <span className="flex items-center text-green-600 gap-2"><CheckCircle size={16}/> OK</span>
+                ) : (
+                    <span className="flex items-center text-red-600 gap-2"><XCircle size={16}/> Failed</span>
+                )}
+            </div>
+
+            {/* STEP 2: USER */}
+            <div className="flex items-center justify-between border-b pb-4">
+                <span className="font-bold text-slate-700">2. Find User</span>
+                {userId ? (
+                    <span className="flex items-center text-green-600 gap-2"><CheckCircle size={16}/> {userStatus}</span>
+                ) : (
+                    <span className="flex items-center text-red-600 gap-2"><XCircle size={16}/> Failed</span>
+                )}
+            </div>
+
+            {/* STEP 3: DATABASE */}
+            <div className="flex items-center justify-between border-b pb-4">
+                <span className="font-bold text-slate-700">3. Update Database</span>
+                {dbStatus === "Success" ? (
+                    <span className="flex items-center text-green-600 gap-2"><CheckCircle size={16}/> Updated "Pro"</span>
+                ) : (
+                    <span className="flex items-center text-red-600 gap-2"><XCircle size={16}/> Failed</span>
+                )}
+            </div>
+            {dbError && <div className="bg-red-50 text-red-700 p-3 rounded">{dbError}</div>}
+
+            {/* RAW LOGS */}
+            <div className="bg-slate-900 text-green-400 p-4 rounded-lg mt-6">
+                <p className="text-slate-500 mb-2 border-b border-slate-700 pb-1">Server Logs:</p>
+                {logs.map((l, i) => (
+                    <div key={i}>{`> ${l}`}</div>
+                ))}
+            </div>
+
+            <div className="mt-6 text-center">
+                <p className="text-slate-500 mb-4">Take a screenshot of this page if errors appear.</p>
+                <a href={`/${locale}/dashboard`} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                    Try Manual Button to Dashboard
+                </a>
+            </div>
+
         </div>
       </div>
     </div>
