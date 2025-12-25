@@ -8,6 +8,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { User, LogOut, LayoutDashboard, Home, Mail, Settings } from "lucide-react";
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import Image from "next/image"; // Don't forget this import!
 
 export function Navigation() {
   const t = useTranslations('Navigation');
@@ -48,12 +49,22 @@ export function Navigation() {
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         
-        {/* Logo - Use Link instead of <a> to preserve language state */}
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-extrabold text-slate-900 tracking-tight">
-            OnlineCertificate<span className="text-blue-600">.org</span>
-          </span>
-        </Link>
+
+<Link href="/" className="flex items-center gap-2">
+  <Image 
+    src="/certlogo.png"   // The leading slash points to the root of the public folder
+    alt="OnlineCertificate Logo" 
+    width={32} 
+    height={32} 
+    className="object-contain" 
+  />
+  <span className="text-xl font-extrabold text-slate-900 tracking-tight">
+    OnlineCertificate<span className="text-blue-600">.org</span>
+  </span>
+</Link>
+
+
+
 
         {/* Menu Items */}
         <div className="flex items-center gap-4 sm:gap-6">

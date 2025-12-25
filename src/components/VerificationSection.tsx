@@ -1,4 +1,5 @@
-import Link from "next/link";
+// 1. CHANGE: Import Link from your custom i18n routing, NOT next/link
+import { Link } from "@/i18n/routing"; 
 import { ShieldCheck, BadgeCheck, Lock, Search, CheckCircle2, QrCode, FileCheck } from "lucide-react";
 import { useTranslations } from 'next-intl';
 
@@ -46,6 +47,7 @@ export function VerificationSection() {
                 </li>
             </ul>
 
+            {/* Link now automatically handles /en/verify or /es/verify */}
             <Link href="/verify" className="inline-flex items-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-lg font-bold hover:bg-slate-800 transition-all shadow-md">
                 <Search size={18} /> {t('cta')}
             </Link>
@@ -93,13 +95,13 @@ export function VerificationSection() {
                       </div>
 
                       <div className="border-t border-slate-100 pt-6">
-                         <div className="flex items-center justify-center gap-2 text-emerald-700 font-bold">
-                            <CheckCircle2 size={20} />
-                            <span>{t('card_match')}</span>
-                         </div>
-                         <p className="text-xs text-slate-400 mt-2">
-                            {t('card_source')}
-                         </p>
+                          <div className="flex items-center justify-center gap-2 text-emerald-700 font-bold">
+                             <CheckCircle2 size={20} />
+                             <span>{t('card_match')}</span>
+                          </div>
+                          <p className="text-xs text-slate-400 mt-2">
+                             {t('card_source')}
+                          </p>
                       </div>
                 </div>
             </div>
