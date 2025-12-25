@@ -1,18 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-// 1. CHANGE: Import Link and useRouter from your custom i18n routing
-import { Link, useRouter } from "@/i18n/routing"; 
-import { useLocale } from "next-intl"; // 2. Import useLocale
+import { Link, useRouter } from "@/i18n/routing"; // 1. Custom Routing
+import { useLocale, useTranslations } from "next-intl"; // 2. i18n Hooks
 import { createBrowserClient } from "@supabase/ssr";
 import { User, LogOut, LayoutDashboard, Home, Mail, Settings } from "lucide-react";
-import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import Image from "next/image"; // Don't forget this import!
+import Image from "next/image";
 
 export function Navigation() {
   const t = useTranslations('Navigation');
-  const locale = useLocale(); // Get current language (e.g., 'en' or 'es')
+  const locale = useLocale(); // Get current language (e.g., 'en', 'es', 'zh')
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
   
@@ -22,15 +20,20 @@ export function Navigation() {
   );
 
   useEffect(() => {
+    // 1. Initial User Check
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
     };
     getUser();
 
+    // 2. Real-time Auth Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (_event === 'SIGNED_OUT') router.refresh();
+      if (_event === 'SIGNED_OUT') {
+         // Fallback: If session expires automatically, just refresh current view
+         router.refresh(); 
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -40,8 +43,9 @@ export function Navigation() {
     await supabase.auth.signOut();
     setUser(null);
     
-    // 3. FIX: Hard reload to the CURRENT locale root
-    // This preserves the language while still clearing the browser cache
+    // 3. LOGOUT LOGIC (Locale Aware)
+    // We force a hard reload to the localized root (e.g. /es, /zh, or /en)
+    // This clears the cache but keeps the user in their chosen language.
     window.location.href = `/${locale}`; 
   };
 
@@ -49,28 +53,24 @@ export function Navigation() {
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         
+        {/* LOGO */}
+        <Link href="/" className="flex items-center gap-2">
+          <Image 
+            src="/certlogo.png" 
+            alt="OnlineCertificate Logo" 
+            width={32} 
+            height={32} 
+            className="object-contain" 
+          />
+          <span className="text-xl font-extrabold text-slate-900 tracking-tight">
+            OnlineCertificate<span className="text-blue-600">.org</span>
+          </span>
+        </Link>
 
-<Link href="/" className="flex items-center gap-2">
-  <Image 
-    src="/certlogo.png"   // The leading slash points to the root of the public folder
-    alt="OnlineCertificate Logo" 
-    width={32} 
-    height={32} 
-    className="object-contain" 
-  />
-  <span className="text-xl font-extrabold text-slate-900 tracking-tight">
-    OnlineCertificate<span className="text-blue-600">.org</span>
-  </span>
-</Link>
-
-
-
-
-        {/* Menu Items */}
+        {/* MENU ITEMS */}
         <div className="flex items-center gap-4 sm:gap-6">
           
           {/* Public Links */}
-          {/* Use Link instead of <a> */}
           <Link href="/" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5">
             <Home size={16} /> <span className="hidden sm:inline">{t('home')}</span>
           </Link>
