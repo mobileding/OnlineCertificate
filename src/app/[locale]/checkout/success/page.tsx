@@ -1,4 +1,4 @@
-import { Stripe } from "stripe";
+2025-12-15.cloverimport { Stripe } from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { MagicLinkSender } from "./MagicLinkSender";
@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 
 // 1. Init Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-02-24.acacia", 
+  apiVersion: "2025-12-15.clover", 
 });
 
 // 2. Init Supabase Admin
