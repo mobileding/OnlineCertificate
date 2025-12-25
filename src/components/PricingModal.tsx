@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, X, Zap, Crown, ArrowRight, Loader2, LayoutDashboard, BadgeCheck, UploadCloud, QrCode, Image as ImageIcon } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface PricingModalProps {
 }
 
 export function PricingModal({ isOpen, onClose, reason }: PricingModalProps) {
+  const t = useTranslations('PricingModal');
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -28,13 +30,13 @@ export function PricingModal({ isOpen, onClose, reason }: PricingModalProps) {
       if (data.url) {
         window.location.href = data.url; 
       } else {
-        alert("Something went wrong initiating checkout.");
+        alert(t('alert_checkout'));
         setLoading(false);
       }
     } catch (error) {
       console.error(error);
       setLoading(false);
-      alert("Connection error. Please try again.");
+      alert(t('alert_connection'));
     }
   };
 
@@ -47,10 +49,10 @@ export function PricingModal({ isOpen, onClose, reason }: PricingModalProps) {
 
         <div className="text-center p-8 pb-4">
           <h2 className="text-2xl font-bold text-slate-900 mb-2">
-             Professional Verification & Branding
+              {t('title')}
           </h2>
           <p className="text-slate-500">
-             Upgrade to Pro to save your work, remove limits, and verify your organization.
+              {t('subtitle')}
           </p>
         </div>
 
@@ -59,63 +61,63 @@ export function PricingModal({ isOpen, onClose, reason }: PricingModalProps) {
           {/* VISITOR (Current) */}
           <div className="border border-slate-200 rounded-xl p-6 relative bg-slate-50 opacity-80">
             <div className="absolute top-0 right-0 bg-slate-200 text-slate-600 text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
-                Current
+                {t('vis_badge')}
             </div>
             <h3 className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                <Zap className="w-5 h-5 text-slate-400" /> Visitor
+                <Zap className="w-5 h-5 text-slate-400" /> {t('vis_title')}
             </h3>
-            <p className="text-3xl font-bold text-slate-400 mt-4">Free <span className="text-sm font-normal text-slate-400">/ forever</span></p>
+            <p className="text-3xl font-bold text-slate-400 mt-4">{t('vis_price')} <span className="text-sm font-normal text-slate-400">{t('vis_period')}</span></p>
             
             <ul className="mt-6 space-y-3">
                 <li className="flex items-center gap-2 text-sm text-slate-600">
-                    <Check className="w-4 h-4 text-green-500"/> Download PDF
+                    <Check className="w-4 h-4 text-green-500"/> {t('feat_pdf')}
                 </li>
                 <li className="flex items-center gap-2 text-sm text-slate-400">
-                    <X className="w-4 h-4 text-slate-300"/> Dashboard & History
+                    <X className="w-4 h-4 text-slate-300"/> {t('feat_dash')}
                 </li>
                 <li className="flex items-center gap-2 text-sm text-slate-400">
-                    <X className="w-4 h-4 text-slate-300"/> Custom Logo Upload
+                    <X className="w-4 h-4 text-slate-300"/> {t('feat_logo')}
                 </li>
                 <li className="flex items-center gap-2 text-sm text-slate-400">
-                    <X className="w-4 h-4 text-slate-300"/> Permanent Cloud Verification
+                    <X className="w-4 h-4 text-slate-300"/> {t('feat_cloud')}
                 </li>
                 <li className="flex items-center gap-2 text-sm text-slate-400">
-                    <X className="w-4 h-4 text-slate-300"/> Verified Business Badge
+                    <X className="w-4 h-4 text-slate-300"/> {t('feat_badge')}
                 </li>
                 <li className="flex items-center gap-2 text-sm text-slate-400">
-                    <X className="w-4 h-4 text-slate-300"/> Bulk CSV Generation
+                    <X className="w-4 h-4 text-slate-300"/> {t('feat_bulk')}
                 </li>
             </ul>
             <button onClick={onClose} className="mt-8 block w-full bg-white border border-slate-300 text-slate-500 font-bold py-2.5 rounded-lg text-center hover:bg-slate-100 transition-colors text-sm">
-                Continue as Visitor
+                {t('vis_btn')}
             </button>
           </div>
 
           {/* PRO PLAN ($6) */}
           <div className="border-2 border-blue-600 rounded-xl p-6 shadow-xl relative overflow-hidden bg-white">
             <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
-                Best Value
+                {t('pro_badge')}
             </div>
             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Crown className="w-5 h-5 text-blue-600" /> Pro Access
+                <Crown className="w-5 h-5 text-blue-600" /> {t('pro_title')}
             </h3>
-            <p className="text-3xl font-bold text-slate-900 mt-4">$6 <span className="text-sm font-normal text-slate-500">/ month</span></p>
+            <p className="text-3xl font-bold text-slate-900 mt-4">{t('pro_price')} <span className="text-sm font-normal text-slate-500">{t('pro_period')}</span></p>
             
             <ul className="mt-6 space-y-3">
                 <li className="flex items-center gap-2 text-sm text-slate-900 font-medium">
-                    <LayoutDashboard className="w-4 h-4 text-blue-600"/> Dashboard & History
+                    <LayoutDashboard className="w-4 h-4 text-blue-600"/> {t('feat_dash')}
                 </li>
                 <li className="flex items-center gap-2 text-sm text-slate-900 font-medium">
-                    <ImageIcon className="w-4 h-4 text-blue-600"/> Custom Logo Upload
+                    <ImageIcon className="w-4 h-4 text-blue-600"/> {t('feat_logo')}
                 </li>
                 <li className="flex items-center gap-2 text-sm text-slate-900 font-medium">
-                    <QrCode className="w-4 h-4 text-blue-600"/> Permanent Cloud Verification
+                    <QrCode className="w-4 h-4 text-blue-600"/> {t('feat_cloud')}
                 </li>
                 <li className="flex items-center gap-2 text-sm text-slate-900 font-medium">
-                    <BadgeCheck className="w-4 h-4 text-blue-600"/> Verified Business Badge
+                    <BadgeCheck className="w-4 h-4 text-blue-600"/> {t('feat_badge')}
                 </li>
                 <li className="flex items-center gap-2 text-sm text-slate-900 font-medium">
-                    <UploadCloud className="w-4 h-4 text-blue-600"/> Bulk CSV Generation
+                    <UploadCloud className="w-4 h-4 text-blue-600"/> {t('feat_bulk')}
                 </li>
             </ul>
             
@@ -128,7 +130,7 @@ export function PricingModal({ isOpen, onClose, reason }: PricingModalProps) {
                 {loading ? (
                     <Loader2 className="animate-spin w-5 h-5" />
                 ) : (
-                    <>Unlock Pro Features <ArrowRight size={16} /></>
+                    <>{t('pro_btn')} <ArrowRight size={16} /></>
                 )}
             </button>
           </div>

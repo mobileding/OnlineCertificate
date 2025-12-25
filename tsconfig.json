@@ -18,9 +18,12 @@
         "name": "next"
       }
     ],
+    // --- THIS IS THE FIX ---
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"] 
     }
+    // -----------------------
   },
   "include": [
     "next-env.d.ts",

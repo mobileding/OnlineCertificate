@@ -3,9 +3,8 @@
 import { 
   Loader2, Save, Palette, Type, LayoutTemplate, 
   Download, ScrollText, Wand2, Lock, Crown, ImagePlus, Trash2,
-  Sparkles, Home
+  Sparkles 
 } from "lucide-react";
-import Link from "next/link";
 import { CertificateTemplate } from './CertificateTemplate';
 import html2canvas from 'html2canvas';
 import { useState, useEffect } from 'react'; 
@@ -15,8 +14,8 @@ import { saveCertificate } from "../app/actions/save";
 import { SaveModal } from './SaveModal';
 import { SuccessModal } from './SuccessModal';
 import { PricingModal } from './PricingModal'; 
+// IMPORT THE NEW COMPONENT
 import { GeneratorHero } from "./GeneratorHero"; 
-import { useTranslations } from 'next-intl'; // 1. Import Hook
 
 interface GeneratorProps {
   initialPrompt?: string;
@@ -24,8 +23,6 @@ interface GeneratorProps {
 }
 
 export function Generator({ initialPrompt = "", initialData = null }: GeneratorProps) {
-  const t = useTranslations('Generator'); // 2. Initialize Hook
-  
   // === STATE ===
   const [input, setInput] = useState(initialPrompt);
   const [loading, setLoading] = useState(false);
@@ -38,7 +35,7 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
   const [userLimitStatus, setUserLimitStatus] = useState<any>({
       canSave: true, 
       reason: "", 
-      isLoggedIn: false, 
+      isLoggedIn: false,
       tier: 'guest' 
   });
     
@@ -56,20 +53,6 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
     getUserLimits().then(setUserLimitStatus);
   }, []);
 
-  // === HANDLE BROWSER BACK BUTTON ===
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-        if (event.state && event.state.result) {
-            setResult(event.state.result);
-        } else {
-            setResult(null);
-        }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
   const isPaid = userLimitStatus?.tier === 'pro' || userLimitStatus?.tier === 'elite';
 
   // === HANDLERS ===
@@ -81,7 +64,7 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 500 * 1024) { 
-          alert(t('alerts.logo_size')); // Translated
+          alert("Logo file is too large! Please use an image under 500KB.");
           return;
       }
       const reader = new FileReader();
@@ -107,13 +90,11 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
       const data = await response.json();
 
       if (data.error) {
-        setLogs(prev => [...prev, t('alerts.policy_violation')]);
+        setLogs(prev => [...prev, "ERROR: Policy Violation."]);
         setErrorMessage(data.error); 
         return; 
       }
       
-      window.history.pushState({ result: data }, '', '');
-
       setResult(data);
       if(data.theme_color) setCustomColor(data.theme_color);
       setLogs(prev => [...prev, "Render complete."]);
@@ -121,7 +102,7 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
     } catch (error) {
       console.error(error);
       setLogs(prev => [...prev, "ERROR: Connection Failed."]);
-      setErrorMessage(t('alerts.conn_fail'));
+      setErrorMessage("Connection failed. Please check your internet.");
     } finally {
       setLoading(false);
     }
@@ -129,22 +110,22 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
 
   const handleSaveSingle = async (nameOverride?: string) => {
     setIsSaveModalOpen(false);
+    
     const generateSegment = () => Math.random().toString(36).substring(2, 5).toUpperCase();
     const formattedId = `${generateSegment()}-${generateSegment()}-${generateSegment()}`;
     const finalName = nameOverride || result.recipient_name_placeholder;
 
-    // Use translated defaults if fields are empty
     const payload = {
-        recipient_name:         finalName, 
-        course_title:           result.certificate_title || t('defaults.title'),
-        organization_name:      result.organization_name || t('defaults.org'),
-        action_text:            result.action_text || t('defaults.action'),
-        signature_text:         result.signature_text,
-        theme:                  "Modern",
-        theme_color:            customColor,
-        verification_code:      formattedId,
-        issue_date:             new Date().toISOString().split('T')[0],
-        logo_base64:            customLogo 
+        recipient_name:        finalName, 
+        course_title:          result.certificate_title || "Certificate",
+        organization_name:     result.organization_name || "Organization",
+        action_text:           result.action_text || "For outstanding achievement.",
+        signature_text:        result.signature_text,
+        theme:                 "Modern",
+        theme_color:           customColor,
+        verification_code:     formattedId,
+        issue_date:            new Date().toISOString().split('T')[0],
+        logo_base64:           customLogo 
     };
 
     const response = await saveCertificate(payload, false);
@@ -169,7 +150,7 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
         
         if (!response.guest) getUserLimits().then(setUserLimitStatus);
     } else {
-        alert(t('alerts.save_error') + response.error);
+        alert("Error saving: " + response.error);
     }
   };
 
@@ -181,9 +162,9 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
 
     const payloads = names.map(name => ({
         recipient_name:        name,
-        course_title:          result.certificate_title || t('defaults.title'),
-        organization_name:     result.organization_name || t('defaults.org'),
-        action_text:           result.action_text || t('defaults.action'),
+        course_title:          result.certificate_title || "Certificate",
+        organization_name:     result.organization_name || "Organization",
+        action_text:           result.action_text || "For outstanding achievement.",
         signature_text:        result.signature_text,
         theme:                 "Modern",
         theme_color:           customColor,
@@ -221,7 +202,7 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
              getUserLimits().then(setUserLimitStatus);
         }
     } else {
-        alert(t('alerts.bulk_error') + (response.message || response.error));
+        alert("Bulk save error: " + (response.message || response.error));
     }
   };
 
@@ -242,7 +223,7 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
         const canvas = await html2canvas(clone, { 
             scale: 2, 
             useCORS: true, 
-            logging: false, 
+            logging: false,
             windowWidth: 1123,
             windowHeight: 794
         });
@@ -252,13 +233,14 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
         pdf.save(`${result.recipient_name_placeholder || 'certificate'}.pdf`);
     } catch (e) {
         console.error(e);
-        alert(t('alerts.pdf_error'));
+        alert("Error generating PDF");
     } finally {
         document.body.removeChild(clone);
     }
   };
 
   // --- RENDER HERO (Empty State) ---
+  // If no result, show the new cleaner Hero component
   if (!result && !initialData) {
     return (
         <GeneratorHero 
@@ -270,7 +252,7 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
         />
     );
   }
-    
+   
   // --- RENDER STUDIO (Editor State) ---
   return (
     <div className="flex flex-col min-h-[calc(100vh-64px)] bg-slate-50 font-sans text-slate-900 animate-in fade-in duration-500">
@@ -278,22 +260,11 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
       {/* === TOP: CANVAS PREVIEW AREA === */}
       <div className="w-full bg-slate-100/50 border-b border-slate-200 flex justify-center pt-10 overflow-hidden relative transition-all h-[400px] md:h-[520px] lg:h-[650px] xl:h-[750px]">
           <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
-          
-          <div className="absolute top-4 left-4 z-10 flex gap-2">
-              {/* BACK TO HOME BUTTON */}
-              <Link 
-                href="/" 
-                className="bg-white text-slate-500 hover:text-slate-900 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider transition-colors px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50"
-              >
-                  <Home className="w-3 h-3" /> {t('nav.home')}
-              </Link>
-
-              {/* NEW BUTTON */}
+          <div className="absolute top-4 left-4 z-10">
               <button onClick={() => setResult(null)} className="bg-white text-slate-500 hover:text-slate-900 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider transition-colors px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50">
-                  <LayoutTemplate className="w-3 h-3" /> {t('nav.new')}
+                  <LayoutTemplate className="w-3 h-3" /> New
               </button>
           </div>
-
           <div id="certificate-preview-container" className="shadow-2xl border border-white bg-white origin-top transition-all scale-[0.45] md:scale-[0.6] lg:scale-[0.75] xl:scale-[0.9]">
              <CertificateTemplate 
                 data={result} 
@@ -313,23 +284,23 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
             {/* Left: Tool Tabs */}
             <div className="flex bg-slate-100 p-1 rounded-lg">
                 <button onClick={() => setActiveTab('design')} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'design' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
-                    <Palette size={14} /> {t('tabs.design')}
+                    <Palette size={14} /> Design
                 </button>
                 <button onClick={() => setActiveTab('text')} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'text' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
-                    <Type size={14} /> {t('tabs.text')}
+                    <Type size={14} /> Text
                 </button>
                 <button onClick={() => setActiveTab('paper')} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'paper' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
-                    <ScrollText size={14} /> {t('tabs.paper')}
+                    <ScrollText size={14} /> Paper
                 </button>
                 <button onClick={() => setActiveTab('ai')} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === 'ai' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>
-                    <Wand2 size={14} /> {t('tabs.ai')}
+                    <Wand2 size={14} /> AI
                 </button>
             </div>
 
             {/* Right: Action Buttons */}
             <div className="flex items-center gap-3">
                 <button onClick={handleDownloadPDF} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all bg-white shadow-sm">
-                    <Download size={14} /> {t('actions.pdf')}
+                    <Download size={14} /> PDF
                 </button>
                 
                 <button 
@@ -347,7 +318,7 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
                             : 'bg-slate-900 hover:bg-black text-white disabled:bg-red-400' 
                         }`}
                 >
-                    <Save size={14} /> {t('actions.save')}
+                    <Save size={14} /> Save Certificate
                 </button>
             </div>
          </div>
@@ -361,7 +332,7 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
             {activeTab === 'design' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-2">
                     <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">{t('design.color_label')}</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Primary Color</label>
                         <div className="flex gap-2 flex-wrap">
                             {['#2563eb', '#dc2626', '#16a34a', '#d97706', '#000000', '#7c3aed'].map(c => (
                                 <button key={c} onClick={() => setCustomColor(c)} className={`w-8 h-8 rounded-full border transition-transform ${customColor === c ? 'scale-110 ring-2 ring-offset-2 ring-slate-900 border-transparent' : 'border-slate-200 hover:scale-105'}`} style={{ backgroundColor: c }} />
@@ -370,22 +341,21 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
                         </div>
                     </div>
                     <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">{t('design.theme_label')}</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Theme</label>
                         <div className="flex flex-wrap gap-2">
                             {['Modern', 'Classic', 'Playful', 'Minimal', 'Gothic', 'Elegant', 'Tech', 'Bold'].map((theme) => (
                                 <button key={theme} onClick={() => setDesignTheme(theme as any)} className={`px-3 py-1.5 text-xs font-bold rounded border transition-all ${designTheme === theme ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
-                                    {/* Translate the display name only */}
-                                    {t(`design.themes.${theme}`)}
+                                    {theme}
                                 </button>
                             ))}
                         </div>
                     </div>
                     <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">{t('design.frame_label')}</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Frame</label>
                         <div className="flex flex-wrap gap-2">
                             {['Default', 'Thick', 'Double', 'Dashed', 'None', 'Nest', 'Elegant'].map((style) => (
                                 <button key={style} onClick={() => setFrameStyle(style)} className={`px-3 py-1.5 text-xs font-bold rounded border transition-all ${frameStyle === style ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}>
-                                    {t(`design.frames.${style}`)}
+                                    {style}
                                 </button>
                             ))}
                         </div>
@@ -397,26 +367,26 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
             {activeTab === 'text' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-2">
                     <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t('text.label_title')}</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Title</label>
                         <input className="w-full p-2 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-blue-100 outline-none" value={result.certificate_title || ''} onChange={(e) => updateField('certificate_title', e.target.value)} />
                     </div>
                     <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t('text.label_org')}</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Organization</label>
                         <input className="w-full p-2 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-blue-100 outline-none" value={result.organization_name || ''} onChange={(e) => updateField('organization_name', e.target.value)} />
                     </div>
                     <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t('text.label_sig')}</label>
-                        <input className="w-full p-2 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-blue-100 outline-none" placeholder={t('text.ph_sig')} value={result.signature_text || ''} onChange={(e) => updateField('signature_text', e.target.value)} />
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Signature</label>
+                        <input className="w-full p-2 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-blue-100 outline-none" placeholder="(Leave blank to sign manually)" value={result.signature_text || ''} onChange={(e) => updateField('signature_text', e.target.value)} />
                     </div>
                     <div className="lg:col-span-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t('text.label_msg')}</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Message</label>
                         <input className="w-full p-2 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-blue-100 outline-none" value={result.action_text || ''} onChange={(e) => updateField('action_text', e.target.value)} />
                     </div>
                     
                     {/* === LOGO UPLOAD === */}
                     <div>
                         <div className="flex justify-between items-center mb-1">
-                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('text.label_logo')}</label>
+                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Upload Logo</label>
                              {!isPaid && <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1"><Crown size={10} /> PRO</span>}
                         </div>
                         
@@ -424,27 +394,27 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
                             <div className="space-y-2">
                                 {!customLogo ? (
                                     <label className="flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-300 rounded-lg text-xs font-bold text-slate-500 hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all">
-                                        <ImagePlus size={16} /> {t('text.btn_choose')}
+                                        <ImagePlus size={16} /> Choose Logo
                                         <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
                                     </label>
                                 ) : (
                                     <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 p-2 rounded-lg">
                                         <img src={customLogo} className="w-8 h-8 object-contain rounded bg-white" alt="Logo" />
-                                        <span className="text-xs text-blue-800 font-bold flex-1 truncate">{t('text.status_uploaded')}</span>
+                                        <span className="text-xs text-blue-800 font-bold flex-1 truncate">Logo Uploaded</span>
                                         <button onClick={() => setCustomLogo(null)} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={14}/></button>
                                     </div>
                                 )}
-                                <p className="text-[10px] text-slate-400">{t('text.hint_size')}</p>
+                                <p className="text-[10px] text-slate-400">Max size 500KB</p>
                             </div>
                         ) : (
                             <button onClick={() => setIsPricingOpen(true)} className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 rounded-lg text-xs font-bold text-slate-400 hover:border-amber-300 hover:text-amber-600 hover:bg-amber-50 transition-all">
-                                <Lock size={12} /> {t('text.btn_unlock')}
+                                <Lock size={12} /> Unlock Logo Upload
                             </button>
                         )}
                     </div>
                     
                     <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t('text.label_preview')}</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Preview Name</label>
                         <input className="w-full p-2 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-blue-100 outline-none" value={result.recipient_name_placeholder || ''} onChange={(e) => updateField('recipient_name_placeholder', e.target.value)} />
                     </div>
                 </div>
@@ -453,12 +423,12 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
             {/* TAB 4: PAPER TEXTURES */}
             {activeTab === 'paper' && (
                 <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-4 text-center">{t('paper.label')}</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-4 text-center">Select Paper Material</label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {['None', 'Gold', 'Parchment', 'Guilloche'].map((style) => (
                             <button key={style} onClick={() => setTextureStyle(style)} className={`group relative p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${textureStyle === style ? 'border-blue-600 bg-blue-50/50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
                                 <div className={`w-12 h-12 rounded-full shadow-sm border ${style === 'None' ? 'bg-white' : style === 'Gold' ? 'bg-yellow-200' : style === 'Parchment' ? 'bg-orange-100' : 'bg-slate-50'}`}></div>
-                                <span className="text-xs font-bold text-slate-700">{t(`paper.styles.${style}`)}</span>
+                                <span className="text-xs font-bold text-slate-700">{style}</span>
                             </button>
                         ))}
                     </div>
@@ -468,17 +438,17 @@ export function Generator({ initialPrompt = "", initialData = null }: GeneratorP
             {/* TAB 3: AI REGENERATION */}
             {activeTab === 'ai' && (
                 <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">{t('ai.label')}</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">✨ AI Instructions</label>
                     <div className="space-y-3">
                         <textarea 
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder={t('ai.placeholder')}
+                            placeholder="Describe exactly how you want the certificate to sound..."
                             className="w-full h-32 p-4 text-slate-700 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm leading-relaxed resize-none shadow-sm outline-none"
                         />
                         <div className="flex justify-end">
                             <button onClick={() => handleGenerate()} disabled={loading} className="bg-blue-600 text-white px-8 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm">
-                                {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>} {t('ai.btn_update')}
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>} Update Certificate
                             </button>
                         </div>
                     </div>

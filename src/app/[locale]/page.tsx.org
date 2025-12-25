@@ -18,11 +18,11 @@
 //  );
 //}
 
-import { Generator } from "../components/Generator";
-import { TemplateGallery } from "../components/TemplateGallery"; 
-import { VerificationSection } from "../components/VerificationSection";
-import { TechSpecs } from "../components/TechSpecs";
-import { HomeDetails} from "../components/HomeDetails";
+import { Generator } from "@/components/Generator";
+import { TemplateGallery } from "@/components/TemplateGallery"; 
+import { VerificationSection } from "@/components/VerificationSection";
+import { TechSpecs } from "@/components/TechSpecs";
+import { HomeDetails} from "@/components/HomeDetails";
 
 export default function HomePage() {
   return (

@@ -8,8 +8,8 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import QRCode from "qrcode"; 
 import { CertificateTemplate } from "./CertificateTemplate";
+import { useTranslations } from 'next-intl';
 
 interface SuccessModalProps {
   isOpen: boolean;
@@ -29,12 +29,13 @@ interface SuccessModalProps {
         theme_color: string;
         frame: string;
         logo: string | null;
-        theme?: "Modern" | "Classic" | "Playful" | "Minimal" | "Gothic";
+        theme?: "Modern" | "Classic" | "Playful" | "Minimal" | "Gothic" | "Tech" | "Bold" | "Elegant";
     }
   } | null;
 }
 
 export function SuccessModal({ isOpen, onClose, data }: SuccessModalProps) {
+  const t = useTranslations('SuccessModal');
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0); 
   const hiddenContainerRef = useRef<HTMLDivElement>(null);
@@ -124,7 +125,7 @@ export function SuccessModal({ isOpen, onClose, data }: SuccessModalProps) {
         }
     } else {
         setIsProcessing(false);
-        alert("Error: Could not render certificates.");
+        alert(t('error_render'));
     }
   };
 
@@ -139,7 +140,7 @@ export function SuccessModal({ isOpen, onClose, data }: SuccessModalProps) {
                     <div className="mx-auto bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mb-4 backdrop-blur-md">
                         {isBulk ? <Layers className="w-8 h-8 text-white" /> : <CheckCircle className="w-8 h-8 text-white" />}
                     </div>
-                    <h2 className="text-2xl font-bold text-white">{isBulk ? "Batch Ready!" : "Certificate Saved!"}</h2>
+                    <h2 className="text-2xl font-bold text-white">{isBulk ? t('header_batch') : t('header_single')}</h2>
                 </div>
 
                 <div className="p-6 space-y-6">
@@ -149,14 +150,14 @@ export function SuccessModal({ isOpen, onClose, data }: SuccessModalProps) {
                         {isBulk ? (
                             <>
                                 <p className="text-4xl font-bold text-slate-900 mb-1">{count}</p>
-                                <p className="text-xs text-slate-500 uppercase tracking-widest">Certificates Generated</p>
+                                <p className="text-xs text-slate-500 uppercase tracking-widest">{t('label_generated')}</p>
                             </>
                         ) : (
                             <>
                                 <div className="flex justify-center mb-2 text-slate-300">
                                     <FileText size={32} />
                                 </div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">File Ready</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">{t('label_ready')}</p>
                                 <p className="text-lg font-bold text-slate-900 truncate px-4">
                                     {data.name || data.certificates?.[0]?.name || "Certificate"}.pdf
                                 </p>
@@ -175,19 +176,21 @@ export function SuccessModal({ isOpen, onClose, data }: SuccessModalProps) {
                                 <div className="absolute inset-0 bg-blue-100 transition-all duration-300 ease-out" style={{ width: `${progress}%` }} />
                                 <div className="absolute inset-0 flex items-center justify-center gap-2 text-blue-700 z-10">
                                     <Loader2 className="animate-spin w-4 h-4" /> 
-                                    <span className="text-sm">{isBulk ? `Processing ${progress}%` : "Generating PDF..."}</span>
+                                    <span className="text-sm">
+                                        {isBulk ? t('btn_processing_batch', { progress }) : t('btn_processing_single')}
+                                    </span>
                                 </div>
                             </>
                         ) : (
                             <div className="flex items-center justify-center gap-2">
-                                <Download size={18} /> {isBulk ? "Download All (ZIP)" : "Download PDF"}
+                                <Download size={18} /> {isBulk ? t('btn_download_batch') : t('btn_download_single')}
                             </div>
                         )}
                     </button>
 
                     {data.guest && (
                         <div className="text-center text-xs text-slate-400">
-                            <Link href="/signup" className="underline hover:text-slate-600">Sign up</Link> to save this permanently.
+                            <Link href="/signup" className="underline hover:text-slate-600">{t('guest_link')}</Link> {t('guest_text')}
                         </div>
                     )}
                 </div>
@@ -209,7 +212,7 @@ export function SuccessModal({ isOpen, onClose, data }: SuccessModalProps) {
                                 issue_date: data.design?.date,
                                 verification_code: cert.id 
                             }}
-                            // FIX: Added fallbacks (|| "blue") to ensure strings are never undefined
+                            // FIX: Added fallbacks to ensure strings are never undefined
                             customColor={data.design?.theme_color || "blue"}
                             frameStyle={data.design?.frame || "modern"}
                             customLogo={data.design?.logo || undefined}

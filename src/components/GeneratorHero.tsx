@@ -1,4 +1,5 @@
-import { Wand2, Loader2, ScrollText, GraduationCap, Award, Briefcase, ArrowRight, Sparkles } from "lucide-react";
+import { Wand2, Loader2, GraduationCap, Award, Briefcase, ArrowRight } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
 interface GeneratorHeroProps {
   input: string;
@@ -9,22 +10,24 @@ interface GeneratorHeroProps {
 }
 
 export function GeneratorHero({ input, setInput, onGenerate, loading, errorMessage }: GeneratorHeroProps) {
+  const t = useTranslations('GeneratorHero');
   
+  // Define presets using translations so they update when language changes
   const presets = [
     {
       icon: <Briefcase size={14} />,
-      label: "Employee of Month",
-      prompt: "A professional Employee of the Month certificate for Sarah Jenkins, awarded by TechCorp Inc. for outstanding dedication. "
+      label: t('preset_corp_label'),
+      prompt: t('preset_corp_prompt')
     },
     {
       icon: <GraduationCap size={14} />,
-      label: "Course Completion",
-      prompt: "A formal Certificate of Completion awarded to Michael Chang for mastering Advanced Python. Issued by Code Academy. Date: Today."
+      label: t('preset_course_label'),
+      prompt: t('preset_course_prompt')
     },
     {
       icon: <Award size={14} />,
-      label: "Appreciation",
-      prompt: "walnut city council appreciate Volunteer Team for their selfless support during the rainstorm."
+      label: t('preset_civic_label'),
+      prompt: t('preset_civic_prompt')
     }
   ];
 
@@ -33,14 +36,16 @@ export function GeneratorHero({ input, setInput, onGenerate, loading, errorMessa
       
       <div className="max-w-3xl w-full space-y-8 animate-in fade-in zoom-in-95 duration-500">
         
-        {/* 1. HEADLINE (Serif Font Restored) */}
+        {/* 1. HEADLINE */}
         <div className="text-center space-y-4 mb-8">
           <h1 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 tracking-tight">
-            AI-Written. <span className="text-blue-600">Instantly Verified.</span>
+            {t('title_1')} <span className="text-blue-600">{t('title_2')}</span>
           </h1>
           <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Generate <strong className="font-bold text-slate-900">free, verifiable certificates</strong> with AI in seconds. 
-            Every award includes a secure <strong className="font-bold text-slate-900">QR code</strong> and is stored permanently in the cloud.
+            {/* Rich text translation for bolding specific parts */}
+            {t.rich('subtitle', {
+                strong_tag: (chunks) => <strong className="font-bold text-slate-900">{chunks}</strong>
+            })}
           </p>
         </div>
 
@@ -52,7 +57,7 @@ export function GeneratorHero({ input, setInput, onGenerate, loading, errorMessa
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
-            placeholder="e.g. A certificate for John Doe for winning the 2025 Science Fair..."
+            placeholder={t('placeholder')}
             className="w-full flex-grow p-6 text-lg text-slate-800 placeholder:text-slate-300 resize-none outline-none bg-transparent"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -64,7 +69,7 @@ export function GeneratorHero({ input, setInput, onGenerate, loading, errorMessa
           {/* PRESETS */}
           <div className="px-6 pb-6 pt-2 bg-gradient-to-t from-white via-white to-transparent">
               <p className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3 pl-1">
-                 {input.length > 0 ? "Switch Preset:" : "Try a preset:"}
+                 {input.length > 0 ? t('label_switch') : t('label_try')}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {presets.map((p, i) => (
@@ -87,7 +92,7 @@ export function GeneratorHero({ input, setInput, onGenerate, loading, errorMessa
           {/* FOOTER BAR */}
           <div className="bg-slate-50 border-t border-slate-100 p-3 flex justify-between items-center relative z-30 h-16">
             <span className="text-xs text-slate-400 font-medium pl-3 hidden sm:block">
-              <span className="font-bold">Pro Tip:</span> Mention the "Issuer" and "Date" for best results.
+              <span className="font-bold">{t('tip_label')}</span> {t('tip_text')}
             </span>
             
             <button
@@ -97,11 +102,11 @@ export function GeneratorHero({ input, setInput, onGenerate, loading, errorMessa
             >
               {loading ? (
                 <>
-                  <Loader2 className="animate-spin" size={16} /> Generating...
+                  <Loader2 className="animate-spin" size={16} /> {t('btn_loading')}
                 </>
               ) : (
                 <>
-                  <Wand2 size={16} /> Generate Certificate <ArrowRight size={14} className="opacity-50"/>
+                  <Wand2 size={16} /> {t('btn_generate')} <ArrowRight size={14} className="opacity-50"/>
                 </>
               )}
             </button>
@@ -112,18 +117,13 @@ export function GeneratorHero({ input, setInput, onGenerate, loading, errorMessa
         {/* Error Message */}
         {errorMessage && (
           <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm border border-red-100 flex items-center gap-2 animate-in slide-in-from-top-2">
-             <span className="font-bold">Error:</span> {errorMessage}
+             <span className="font-bold">{t('error_label')}</span> {errorMessage}
           </div>
         )}
 
         {/* 3. FOOTER INFO */}
         <div className="pt-8 flex justify-center gap-8 text-slate-400 text-sm">
-            <div className="flex items-center gap-2">
-                <ScrollText size={14} /> Open Standard PDF
-            </div>
-            <div className="flex items-center gap-2">
-                <Sparkles size={14} /> AI Powered Layouts
-            </div>
+
         </div>
 
       </div>

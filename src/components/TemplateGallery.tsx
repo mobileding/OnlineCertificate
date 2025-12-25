@@ -1,115 +1,117 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { CertificateTemplate } from "./CertificateTemplate";
-import { ArrowRight, ChevronLeft, ChevronRight, Palette } from "lucide-react";
-
-// --- EXPANDED DEMO DATA ---
-const DEMO_TEMPLATES = [
-  {
-    id: 1,
-    label: "Corporate Excellence",
-    color: "#2563eb", // Blue
-    badge: "Most Popular",
-    data: {
-      recipient_name_placeholder: "Sarah Jenkins",
-      certificate_title: "Employee of the Month",
-      organization_name: "TechFlow Systems",
-      action_text: "For demonstrating exceptional leadership and driving record sales in Q4 2024.",
-      signature_text: "James CEO",
-      verification_code: "EMP-882-991",
-    },
-    frame: "Default",
-    texture: "None",
-    theme: "Modern"
-  },
-  {
-    id: 2,
-    label: "Academic Prestige",
-    color: "#d97706", // Gold
-    badge: "Classic",
-    data: {
-      recipient_name_placeholder: "Michael Chang",
-      certificate_title: "Certificate of Completion",
-      organization_name: "Ivy League Online",
-      action_text: "Has successfully mastered the Advanced Python Programming curriculum with Honors.",
-      signature_text: "Dr. A. Smith",
-      verification_code: "EDU-229-X77",
-    },
-    frame: "Double",
-    texture: "Parchment",
-    theme: "Classic"
-  },
-  {
-    id: 3,
-    label: "Creative Visionary",
-    color: "#dc2626", // Red
-    badge: "Bold",
-    data: {
-      recipient_name_placeholder: "The Design Team",
-      certificate_title: "Excellence in Design",
-      organization_name: "Creative Studio X",
-      action_text: "For the outstanding rebranding project that captured the hearts of millions.",
-      signature_text: "Art Director",
-    },
-    frame: "Thick",
-    texture: "None",
-    theme: "Bold"
-  },
-  {
-    id: 4,
-    label: "Hackathon Winner",
-    color: "#10b981", // Emerald
-    badge: "Tech",
-    data: {
-      recipient_name_placeholder: "Alex 'Root' Chen",
-      certificate_title: "1st Place Winner",
-      organization_name: "Global Hack 2025",
-      action_text: "For deploying the most innovative AI solution in the 48-hour sprint.",
-      signature_text: "DevRel Team",
-    },
-    frame: "Nest",
-    texture: "None",
-    theme: "Tech"
-  },
-  {
-    id: 5,
-    label: "Lifetime Achievement",
-    color: "#4f46e5", // Indigo
-    badge: "Elegant",
-    data: {
-      recipient_name_placeholder: "Eleanor Rigby",
-      certificate_title: "Lifetime Service Award",
-      organization_name: "Community Foundation",
-      action_text: "In grateful recognition of 25 years of dedicated volunteer service.",
-      signature_text: "The Board",
-    },
-    frame: "Elegant",
-    texture: "Guilloche",
-    theme: "Elegant"
-  },
-  {
-    id: 6,
-    label: "Rising Star",
-    color: "#ec4899", // Pink
-    badge: "Playful",
-    data: {
-      recipient_name_placeholder: "Tommy Turnberry",
-      certificate_title: "Super Star Award",
-      organization_name: "Little League",
-      action_text: "For having the best attitude and being a great team player this season!",
-      signature_text: "Coach Mike",
-    },
-    frame: "Dashed",
-    texture: "None",
-    theme: "Playful"
-  }
-];
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslations } from 'next-intl';
 
 export function TemplateGallery() {
+  const t = useTranslations('TemplateGallery');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+
+  // Define templates inside the component using useMemo so they update with language
+  const templates = useMemo(() => [
+    {
+      id: 1,
+      label: t('tpl_1_label'),
+      color: "#2563eb", // Blue
+      badge: t('tpl_1_badge'),
+      data: {
+        recipient_name_placeholder: t('tpl_1_recipient'),
+        certificate_title: t('tpl_1_cert_title'),
+        organization_name: t('tpl_1_org'),
+        action_text: t('tpl_1_desc'),
+        signature_text: t('tpl_1_sign'),
+        verification_code: "EMP-882-991",
+      },
+      frame: "Default",
+      texture: "None",
+      theme: "Modern"
+    },
+    {
+      id: 2,
+      label: t('tpl_2_label'),
+      color: "#d97706", // Gold
+      badge: t('tpl_2_badge'),
+      data: {
+        recipient_name_placeholder: t('tpl_2_recipient'),
+        certificate_title: t('tpl_2_cert_title'),
+        organization_name: t('tpl_2_org'),
+        action_text: t('tpl_2_desc'),
+        signature_text: t('tpl_2_sign'),
+        verification_code: "EDU-229-X77",
+      },
+      frame: "Double",
+      texture: "Parchment",
+      theme: "Classic"
+    },
+    {
+      id: 3,
+      label: t('tpl_3_label'),
+      color: "#dc2626", // Red
+      badge: t('tpl_3_badge'),
+      data: {
+        recipient_name_placeholder: t('tpl_3_recipient'),
+        certificate_title: t('tpl_3_cert_title'),
+        organization_name: t('tpl_3_org'),
+        action_text: t('tpl_3_desc'),
+        signature_text: t('tpl_3_sign'),
+      },
+      frame: "Thick",
+      texture: "None",
+      theme: "Bold"
+    },
+    {
+      id: 4,
+      label: t('tpl_4_label'),
+      color: "#10b981", // Emerald
+      badge: t('tpl_4_badge'),
+      data: {
+        recipient_name_placeholder: t('tpl_4_recipient'),
+        certificate_title: t('tpl_4_cert_title'),
+        organization_name: t('tpl_4_org'),
+        action_text: t('tpl_4_desc'),
+        signature_text: t('tpl_4_sign'),
+      },
+      frame: "Nest",
+      texture: "None",
+      theme: "Tech"
+    },
+    {
+      id: 5,
+      label: t('tpl_5_label'),
+      color: "#4f46e5", // Indigo
+      badge: t('tpl_5_badge'),
+      data: {
+        recipient_name_placeholder: t('tpl_5_recipient'),
+        certificate_title: t('tpl_5_cert_title'),
+        organization_name: t('tpl_5_org'),
+        action_text: t('tpl_5_desc'),
+        signature_text: t('tpl_5_sign'),
+      },
+      frame: "Elegant",
+      texture: "Guilloche",
+      theme: "Elegant"
+    },
+    {
+      id: 6,
+      label: t('tpl_6_label'),
+      color: "#ec4899", // Pink
+      badge: t('tpl_6_badge'),
+      data: {
+        recipient_name_placeholder: t('tpl_6_recipient'),
+        certificate_title: t('tpl_6_cert_title'),
+        organization_name: t('tpl_6_org'),
+        action_text: t('tpl_6_desc'),
+        signature_text: t('tpl_6_sign'),
+      },
+      frame: "Dashed",
+      texture: "None",
+      theme: "Playful"
+    }
+  ], [t]);
 
   // Check scroll buttons visibility
   const checkScroll = () => {
@@ -124,7 +126,7 @@ export function TemplateGallery() {
     checkScroll();
     window.addEventListener('resize', checkScroll);
     return () => window.removeEventListener('resize', checkScroll);
-  }, []);
+  }, [templates]); // Re-check when templates load
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -151,14 +153,11 @@ export function TemplateGallery() {
         
         {/* Header */}
         <div className="text-center mb-16 max-w-3xl mx-auto">
-          
-          {/* UPDATED: font-serif added here */}
           <h2 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 mb-6 tracking-tight">
-            Designed to Impress.
+            {t('title')}
           </h2>
           <p className="text-lg text-slate-600 leading-relaxed">
-            From official corporate recognitions to fun playful awards, our engine 
-            auto-formats your certificates perfectly.
+            {t('subtitle')}
           </p>
         </div>
 
@@ -191,7 +190,7 @@ export function TemplateGallery() {
             className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-12 pt-4 px-4 scrollbar-hide -mx-4 md:mx-0"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {DEMO_TEMPLATES.map((template) => (
+            {templates.map((template) => (
               <div 
                 key={template.id} 
                 className="snap-center shrink-0 w-[85vw] md:w-[480px] lg:w-[550px] relative group/card perspective-1000"
@@ -225,7 +224,6 @@ export function TemplateGallery() {
                       <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{template.theme}</div>
                     </div>
                     
-                    {/* UPDATED: font-serif added here */}
                     <h3 className="font-serif font-bold text-slate-900 text-xl group-hover/card:text-blue-600 transition-colors">
                       {template.label}
                     </h3>
@@ -240,7 +238,7 @@ export function TemplateGallery() {
         {/* Mobile Swipe Hint */}
         <div className="flex justify-center gap-2 mt-4 md:hidden">
             <div className="text-xs text-slate-400 font-medium animate-pulse">
-                Swipe to explore designs &rarr;
+                {t('swipe_hint')} &rarr;
             </div>
         </div>
 
@@ -250,7 +248,7 @@ export function TemplateGallery() {
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 className="inline-flex items-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-full font-bold hover:bg-slate-800 transition-all hover:shadow-lg hover:-translate-y-1"
             >
-                Create Your Certificate <ArrowRight size={18} />
+                {t('cta')} <ArrowRight size={18} />
             </button>
         </div>
 

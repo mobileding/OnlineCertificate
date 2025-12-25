@@ -4,6 +4,7 @@ import { BadgeCheck, Calendar, Award, Star, Feather, Crown, ShieldCheck, Termina
 import { useEffect, useState } from "react";
 import QRCode from "qrcode"; 
 import { FitText } from './FitText';
+import { useTranslations } from 'next-intl';
 
 interface CertificateTemplateProps {
   data: any;
@@ -15,6 +16,7 @@ interface CertificateTemplateProps {
 }
 
 export function CertificateTemplate({ data, customColor, frameStyle, customLogo, designTheme = "Modern", textureStyle = "None" }: CertificateTemplateProps) {
+  const t = useTranslations('CertificateTemplate'); // Initialize translations
   const [demoQr, setDemoQr] = useState<string>("");
 
   useEffect(() => {
@@ -117,23 +119,13 @@ export function CertificateTemplate({ data, customColor, frameStyle, customLogo,
 
     // === "THICK" (The Multi-Layered "Museum Mat" Style) ===
     if (frameStyle === 'Thick') {
-        // This creates a rich, layered frame using standard CSS borders and insets.
-        // It looks thick but detailed, solving the "too plain" issue.
         return (
             <>
-                {/* Layer 1: Outermost wide band (16px) */}
                 <div className="absolute inset-0 z-20 pointer-events-none border-[16px]" style={{ borderColor: customColor }} />
-
-                {/* Layer 2: White separator gap (4px) */}
                 <div className="absolute inset-[16px] z-20 pointer-events-none border-[4px] border-white" />
-
-                {/* Layer 3: Inner medium band (8px) */}
                 <div className="absolute inset-[20px] z-20 pointer-events-none border-[8px]" style={{ borderColor: customColor }} />
-
-                {/* Layer 4: Final white gap with a thin dashed line for detail */}
                 <div className="absolute inset-[28px] z-20 pointer-events-none border-[4px] border-white flex items-center justify-center p-1">
-                     {/* The thin dashed line inside the white gap */}
-                     <div className="w-full h-full border border-dashed opacity-60" style={{ borderColor: customColor }} />
+                      <div className="w-full h-full border border-dashed opacity-60" style={{ borderColor: customColor }} />
                 </div>
             </>
         );
@@ -173,23 +165,22 @@ export function CertificateTemplate({ data, customColor, frameStyle, customLogo,
                         <Terminal size={32} className="text-slate-900" />
                         <span className="text-xl font-bold tracking-tighter uppercase">{data?.organization_name}</span>
                     </div>
-<div className="text-right text-xs font-bold text-slate-500">
-    HASH: {data?.verification_code || "X7F-229-99A"} <br/>
-    {/* Use the stable issue_date or a static string if simpler */}
-    TIMESTAMP: {data?.issue_date || new Date().toISOString().split('T')[0]}
-</div>
+                    <div className="text-right text-xs font-bold text-slate-500">
+                        {t('tech_hash')} {data?.verification_code || "X7F-229-99A"} <br/>
+                        {t('tech_timestamp')} {data?.issue_date || new Date().toISOString().split('T')[0]}
+                    </div>
                 </div>
 
                 <div className="flex-grow flex flex-col justify-center pl-12 border-l-4 border-slate-900 my-8">
-                    <p className="text-slate-500 text-sm mb-2 font-bold">{`> const recipient =`}</p>
+                    <p className="text-slate-500 text-sm mb-2 font-bold">{t('tech_const_recipient')}</p>
                     <h2 className="text-6xl font-bold text-slate-900 mb-8">"{data?.recipient_name_placeholder}"</h2>
                     
-                    <p className="text-slate-500 text-sm mb-2 font-bold">{`> const achievement =`}</p>
+                    <p className="text-slate-500 text-sm mb-2 font-bold">{t('tech_const_achievement')}</p>
                     <p className="text-3xl text-slate-800 max-w-4xl mb-8 leading-snug font-medium">"{data?.action_text}"</p>
                     
-                    <p className="text-slate-500 text-sm mb-2 font-bold">{`> status:`}</p>
+                    <p className="text-slate-500 text-sm mb-2 font-bold">{t('tech_status')}</p>
                     <div className="inline-flex items-center gap-2 bg-slate-100 px-3 py-1 rounded text-slate-900 border border-slate-300 w-fit font-bold">
-                        <Zap size={16} fill="currentColor" className="text-black" /> VERIFIED_TRUE
+                        <Zap size={16} fill="currentColor" className="text-black" /> {t('tech_verified_true')}
                     </div>
                 </div>
 
@@ -198,9 +189,9 @@ export function CertificateTemplate({ data, customColor, frameStyle, customLogo,
                         <div className="mb-4">
                            {qrCodeToDisplay && <img src={qrCodeToDisplay} className="w-16 h-16" />}
                         </div>
-                        <span className="font-bold">// AUTH_SIGNATURE:</span> {data.signature_text || "SYSTEM_ROOT"}
+                        <span className="font-bold">{t('tech_auth_sig')}</span> {data.signature_text || "SYSTEM_ROOT"}
                       </div>
-                      <div className="font-bold text-slate-400">// END OF LINE</div>
+                      <div className="font-bold text-slate-400">{t('tech_end_line')}</div>
                 </div>
             </div>
         </div>
@@ -221,7 +212,7 @@ export function CertificateTemplate({ data, customColor, frameStyle, customLogo,
                     }
                     <h3 className="text-3xl font-black uppercase tracking-widest">{data?.organization_name}</h3>
                     <div className="mt-12 opacity-80">
-                        <p className="text-sm font-bold uppercase tracking-widest mb-2">Verified ID</p>
+                        <p className="text-sm font-bold uppercase tracking-widest mb-2">{t('bold_ver_id')}</p>
                         <p className="text-xl font-mono">{data?.verification_code}</p>
                     </div>
                  </div>
@@ -234,11 +225,11 @@ export function CertificateTemplate({ data, customColor, frameStyle, customLogo,
                  </div>
 
                  <h1 className="text-8xl font-black uppercase tracking-tighter mb-2" style={{ color: customColor }}>
-                    Award
+                    {t('bold_award')}
                  </h1>
-                 <h2 className="text-5xl font-bold uppercase text-slate-300 mb-16">Of Excellence</h2>
+                 <h2 className="text-5xl font-bold uppercase text-slate-300 mb-16">{t('bold_excellence')}</h2>
                  
-                 <p className="text-sm font-bold uppercase text-slate-400 mb-2 tracking-widest">Presented To</p>
+                 <p className="text-sm font-bold uppercase text-slate-400 mb-2 tracking-widest">{t('bold_presented_to')}</p>
                  <FitText 
                   text={data?.recipient_name_placeholder} 
                   className="font-black uppercase text-slate-900 mb-12 border-b-4 border-slate-900 pb-4 inline-block w-full" 
@@ -254,7 +245,7 @@ export function CertificateTemplate({ data, customColor, frameStyle, customLogo,
                  <div className="mt-auto flex items-center justify-between">
                       <div>
                         <p className="text-2xl font-signature text-slate-900" style={{ fontFamily: 'cursive' }}>{data.signature_text}</p>
-                        <p className="text-xs font-bold uppercase text-slate-400 mt-1">Authorized Signature</p>
+                        <p className="text-xs font-bold uppercase text-slate-400 mt-1">{t('label_auth_sig')}</p>
                       </div>
                       {qrCodeToDisplay && <img src={qrCodeToDisplay} className="w-24 h-24" />}
                  </div>
@@ -290,24 +281,24 @@ export function CertificateTemplate({ data, customColor, frameStyle, customLogo,
             )}
 
             <h2 className={`text-2xl font-bold mb-2 text-slate-500 ${designTheme === 'Minimal' ? 'text-xs uppercase tracking-[0.3em]' : 'uppercase tracking-widest'}`}>
-                {data.organization_name || "Organization Name"}
+                {data.organization_name || t('std_placeholder_org')}
             </h2>
             
             <h1 className={`text-6xl font-extrabold mb-4 ${currentTheme.fontTitle}`} style={{ color: customColor }}>
-                {data.certificate_title || "Certificate of Appreciation"}
+                {data.certificate_title || t('std_placeholder_title')}
             </h1>
         </div>
 
         {/* MIDDLE: Recipient */}
         <div className="w-full flex flex-col items-center justify-center flex-grow">
-            <p className="text-xl text-slate-600 mb-4 italic">is hereby awarded to</p>
+            <p className="text-xl text-slate-600 mb-4 italic">{t('std_awarded_to')}</p>
             <div className="border-b-2 border-slate-300 w-full max-w-2xl mb-8 pb-2 text-center">
                 <p className={`text-5xl font-bold text-slate-900 ${designTheme === 'Gothic' ? 'font-serif' : 'font-sans'}`}>
-                    {data.recipient_name_placeholder || "Recipient Name"}
+                    {data.recipient_name_placeholder || t('std_placeholder_recipient')}
                 </p>
             </div>
             <p className="text-xl text-slate-600 max-w-3xl leading-relaxed text-center">
-                {data.action_text || "For outstanding performance and dedication."}
+                {data.action_text || t('std_placeholder_desc')}
             </p>
         </div>
 
@@ -315,7 +306,7 @@ export function CertificateTemplate({ data, customColor, frameStyle, customLogo,
         <div className="w-full flex justify-between items-end mt-4">
             {/* Date */}
             <div className="text-center">
-                <div className="flex items-center gap-2 text-slate-400 mb-2 justify-center uppercase text-xs font-bold tracking-wider"><Calendar size={14} /> Date</div>
+                <div className="flex items-center gap-2 text-slate-400 mb-2 justify-center uppercase text-xs font-bold tracking-wider"><Calendar size={14} /> {t('label_date')}</div>
                 <p className="text-xl font-bold border-b border-slate-300 pb-1 px-4 min-w-[200px]">{data.issue_date || new Date().toLocaleDateString()}</p>
             </div>
 
@@ -323,16 +314,16 @@ export function CertificateTemplate({ data, customColor, frameStyle, customLogo,
             <div className="relative group -mb-4">
                 <div className="absolute -inset-4 rounded-full opacity-10 blur-xl group-hover:opacity-20 transition-opacity" style={{ backgroundColor: customColor }}></div>
                 <div className="bg-white p-2 rounded-lg border shadow-sm relative z-10">
-                    {qrCodeToDisplay ? <img src={qrCodeToDisplay} alt="QR" className="w-24 h-24" /> : <div className="w-24 h-24 bg-slate-50 flex items-center justify-center text-[10px]">Loading...</div>}
+                    {qrCodeToDisplay ? <img src={qrCodeToDisplay} alt="QR" className="w-24 h-24" /> : <div className="w-24 h-24 bg-slate-50 flex items-center justify-center text-[10px]">{t('label_loading')}</div>}
                 </div>
-                <div className="text-[10px] font-bold text-center mt-2 uppercase tracking-wider text-slate-400">Verified</div>
+                <div className="text-[10px] font-bold text-center mt-2 uppercase tracking-wider text-slate-400">{t('label_verified')}</div>
             </div>
 
             {/* Signature */}
             <div className="text-center">
-                <div className="text-slate-400 mb-2 justify-center uppercase text-xs font-bold tracking-wider">Authorized Signature</div>
+                <div className="text-slate-400 mb-2 justify-center uppercase text-xs font-bold tracking-wider">{t('label_auth_sig')}</div>
                 <p className="text-2xl border-b border-slate-300 pb-1 px-4 min-w-[200px]" style={{ fontFamily: signature ? 'cursive' : 'inherit' }}>
-                    {signature || <span className="opacity-0">Sign Here</span>}
+                    {signature || <span className="opacity-0">{t('label_sign_here')}</span>}
                 </p>
             </div>
         </div>
@@ -340,7 +331,7 @@ export function CertificateTemplate({ data, customColor, frameStyle, customLogo,
         {/* Verification Footer */}
         <div className="absolute bottom-4 w-full text-center">
             <p className="text-[10px] text-slate-400 uppercase tracking-widest">
-                Verification ID: {data.verification_code || "PREVIEW"}
+                {t('label_ver_id')} {data.verification_code || t('label_preview')}
             </p>
         </div>
 
