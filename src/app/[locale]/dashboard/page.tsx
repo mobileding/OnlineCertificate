@@ -37,19 +37,22 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
   }
 
   // 2. === THE GATEKEEPER ===
-  const { data: profile } = await supabase
+const { data: profile } = await supabase
     .from('profiles')
     .select('subscription_tier')
     .eq('id', user.id)
     .single();
 
-  // DEBUGGING: This will show up in your Vercel/Terminal logs
-  console.log(`[Dashboard Check] User: ${user.email} | Tier: ${profile?.subscription_tier}`);
-
   const isPaid = profile?.subscription_tier === 'pro' || profile?.subscription_tier === 'elite';
+  
+  // --- THE FIX START ---
+  // Check if the URL has ?new_pro=true
+  const search = await searchParams;
+  const isFreshUpgrade = search?.new_pro === 'true';
 
-  if (!isPaid) {
-    // FIX: Redirect to the localized pricing page
+  // LOGIC: If they are NOT paid, AND they are NOT a fresh upgrade -> Kick them out.
+  // "isFreshUpgrade" acts as our VIP Pass to bypass the check for this one visit.
+  if (!isPaid && !isFreshUpgrade) {
     redirect(`/${locale}/pricing?error=upgrade_required`);
   }
   // ==========================

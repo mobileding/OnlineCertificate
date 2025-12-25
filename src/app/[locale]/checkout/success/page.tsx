@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { MagicLinkSender } from "./MagicLinkSender";
 import { CheckCircle } from "lucide-react";
+import { revalidatePath } from "next/cache"; // 1. Import this
 
 // 1. Init Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -79,18 +80,22 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
 // 6. EXECUTE REDIRECT (LOCALE AWARE)
   if (shouldAutoLogin) {
       // FIX: Force production URL when on Vercel
-      // We check NODE_ENV to decide the domain. No more accidental localhost.
       const isProduction = process.env.NODE_ENV === 'production';
       
       const siteUrl = isProduction 
         ? 'https://onlinecertificate.org' 
         : 'http://localhost:3000';
       
+      // --- NEW: CLEAR CACHE ---
+      // This forces Next.js to forget the old "Free" status before we send them there.
+      revalidatePath('/', 'layout'); 
+      revalidatePath(`/${locale}/dashboard`);
+      // ------------------------
+
       const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
         email: customerEmail,
         options: {
-            // Now includes the correct domain + locale
             redirectTo: `${siteUrl}/${locale}/dashboard?new_pro=true`
         }
       });
