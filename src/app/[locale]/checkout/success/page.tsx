@@ -3,11 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { MagicLinkSender } from "./MagicLinkSender";
 import { CheckCircle } from "lucide-react";
-import { revalidatePath } from "next/cache"; // 1. Import this
+import { revalidatePath } from "next/cache"; // <--- CRITICAL IMPORT
 
 // 1. Init Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-12-15.clover", // Use your actual version
+  apiVersion: "2025-02-24.acacia", // Use your actual version
 });
 
 // 2. Init Supabase Admin
@@ -18,12 +18,12 @@ const supabaseAdmin = createClient(
 
 interface PageProps {
   searchParams: Promise<{ session_id?: string }>;
-  params: Promise<{ locale: string }>; // <--- ADDED LOCALE HERE
+  params: Promise<{ locale: string }>;
 }
 
 export default async function CheckoutSuccessPage({ searchParams, params }: PageProps) {
   const { session_id } = await searchParams;
-  const { locale } = await params; // <--- GET CURRENT LOCALE (e.g., 'en')
+  const { locale } = await params;
 
   if (!session_id) {
      return <div className="p-8 text-center text-red-500">Error: No payment session found.</div>;
@@ -44,13 +44,34 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
 
   if (!customerEmail) return <div>No email found in payment details.</div>;
 
-  // 4. FIND USER & FORCE UPDATE (CRITICAL FIX)
-  // We update the DB *now* so the Dashboard doesn't kick them out
-  const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
-  const existingUser = users.find(u => u.email === customerEmail);
+  // 4. DETERMINE ENVIRONMENT (Fixes the Localhost Bug)
+  const isProduction = process.env.NODE_ENV === 'production';
+  const siteUrl = isProduction 
+    ? 'https://onlinecertificate.org' 
+    : 'http://localhost:3000';
 
-  if (existingUser) {
-      // Force the DB to mark them as PRO immediately
+  // 5. GENERATE MAGIC LINK FIRST
+  // We do this first so we get the User ID (even if they are brand new)
+  const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    type: 'magiclink',
+    email: customerEmail,
+    options: {
+        // Redirect to the Dashboard with the "New Pro" flag
+        redirectTo: `${siteUrl}/${locale}/dashboard?new_pro=true`
+    }
+  });
+
+  if (linkError || !linkData.user) {
+    console.error("Auth Error:", linkError);
+  }
+
+  // 6. FORCE DB UPDATE (The Fix for "Upgrade Required" Error)
+  // We use the ID from step 5 to force the upgrade NOW.
+  const userId = linkData.user?.id;
+
+  if (userId) {
+      console.log(`[Success] Force upgrading User ${userId} to Pro`);
+
       await supabaseAdmin
         .from('profiles')
         .update({ 
@@ -58,75 +79,42 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
             subscription_id: subscriptionId,
             updated_at: new Date().toISOString()
         })
-        .eq('id', existingUser.id);
+        .eq('id', userId);
   }
 
-  // 5. AUTO-LOGIN LOGIC
-  let shouldAutoLogin = false;
+  // 7. CLEAR CACHE (The Fix for Session Issues)
+  // This ensures the Dashboard fetches the NEW "Pro" status, not the old "Free" one.
+  revalidatePath('/', 'layout'); 
+  revalidatePath(`/${locale}/dashboard`);
 
-  if (!existingUser) {
-      shouldAutoLogin = true;
-  } else {
-      const lastSignIn = existingUser.last_sign_in_at;
-      const createdAt = new Date(existingUser.created_at).getTime();
-      const now = new Date().getTime();
-      const isBrandNew = (now - createdAt) < 5 * 60 * 1000; 
+  // 8. EXECUTE REDIRECT
+  // Logic: Auto-login if they are new or haven't logged in recently.
+  const lastSignIn = linkData.user?.last_sign_in_at;
+  const createdAt = new Date(linkData.user?.created_at || new Date()).getTime();
+  const now = new Date().getTime();
+  const isBrandNew = (now - createdAt) < 5 * 60 * 1000; 
 
-      if (!lastSignIn || isBrandNew) {
-          shouldAutoLogin = true;
-      }
+  const shouldAutoLogin = !lastSignIn || isBrandNew;
+
+  if (shouldAutoLogin && linkData?.properties?.action_link) {
+      redirect(linkData.properties.action_link);
   }
 
-// 6. EXECUTE REDIRECT (LOCALE AWARE)
-  if (shouldAutoLogin) {
-      // FIX: Force production URL when on Vercel
-      const isProduction = process.env.NODE_ENV === 'production';
-      
-      const siteUrl = isProduction 
-        ? 'https://onlinecertificate.org' 
-        : 'http://localhost:3000';
-      
-      // --- NEW: CLEAR CACHE ---
-      // This forces Next.js to forget the old "Free" status before we send them there.
-      revalidatePath('/', 'layout'); 
-      revalidatePath(`/${locale}/dashboard`);
-      // ------------------------
-
-      const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'magiclink',
-        email: customerEmail,
-        options: {
-            redirectTo: `${siteUrl}/${locale}/dashboard?new_pro=true`
-        }
-      });
-
-      if (linkData?.properties?.action_link) {
-          redirect(linkData.properties.action_link);
-      }
-  }
-  // 7. EXISTING USER FALLBACK
+  // 9. FALLBACK (Manual Login for security)
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-        
         <div className="bg-green-600 p-8 text-center">
-          <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-white">Welcome Back!</h1>
-          <p className="text-green-100 text-sm mt-2">Your upgrade was successful.</p>
+          <CheckCircle className="w-16 h-16 text-white mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-white">Payment Successful!</h1>
+          <p className="text-green-100 text-sm mt-2">Your account has been upgraded.</p>
         </div>
-
         <div className="p-8">
-            <div className="text-center mb-6">
-                <p className="text-slate-600 text-sm">
-                    Since you already have an account, please verify your identity to access your Pro features.
-                </p>
-            </div>
-            {/* Show the sender we built earlier */}
+            <p className="text-slate-600 text-sm text-center mb-6">
+                Please check your email <strong>{customerEmail}</strong> for a secure login link.
+            </p>
             <MagicLinkSender email={customerEmail} />
         </div>
-
       </div>
     </div>
   );
