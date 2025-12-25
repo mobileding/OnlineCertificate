@@ -1,14 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, AlertCircle } from "lucide-react";
 
-export default function RedeemPage() {
+// Helper component to safely read search params
+function RedeemLogic() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [status, setStatus] = useState("Authenticating...");
   const [errorMsg, setErrorMsg] = useState("");
+
+  // 1. GET LOCALE FROM URL (Defaults to 'en')
+  // We expect the URL to look like: /auth/redeem?locale=es#access_token=...
+  const locale = searchParams.get('locale') || 'en';
 
   useEffect(() => {
     const supabase = createBrowserClient(
@@ -18,61 +24,60 @@ export default function RedeemPage() {
 
     const handleSessionFound = async () => {
         setStatus("Session secured. Redirecting...");
-        // Wait 500ms for the cookie to be written to the browser
+        
+        // 2. CONSTRUCT LOCALIZED PATH
+        // We preserve the 'new_pro' flag and add the correct language prefix
+        const targetUrl = `/${locale}/dashboard?new_pro=true`;
+        
         setTimeout(() => {
-            window.location.href = "/dashboard?new_pro=true";
+            // Force hard reload to ensure all middleware/cookies sync
+            window.location.href = targetUrl;
         }, 500);
     };
 
-    // 1. STANDARD CHECK (Supabase Auto-detect)
-    supabase.auth.onAuthStateChange((event, session) => {
+    // A. STANDARD CHECK
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session) {
         handleSessionFound();
       }
     });
 
-    // 2. THE NUCLEAR OPTION (Manual Hash Parsing)
-    // If the standard check fails, we do it ourselves.
+    // B. MANUAL HASH PARSING
     const hash = window.location.hash;
     if (hash && hash.includes("access_token")) {
         setStatus("Manually exchanging token...");
-        
-        // Extract tokens from the URL hash #access_token=...&refresh_token=...
-        const params = new URLSearchParams(hash.substring(1)); // remove the #
+        const params = new URLSearchParams(hash.substring(1));
         const accessToken = params.get("access_token");
         const refreshToken = params.get("refresh_token");
 
         if (accessToken && refreshToken) {
-            // Force-set the session
             supabase.auth.setSession({
                 access_token: accessToken,
                 refresh_token: refreshToken,
             }).then(({ data, error }) => {
                 if (error) {
                     console.error("Manual Exchange Error:", error);
-                    setStatus("Error exchanging token");
                     setErrorMsg(error.message);
                 } else if (data.session) {
-                    console.log("Manual exchange successful!");
                     handleSessionFound();
                 }
             });
         }
     } else {
-        // If no hash, maybe we are already logged in?
+        // C. ALREADY LOGGED IN CHECK
         supabase.auth.getSession().then(({ data }) => {
             if (data.session) handleSessionFound();
             else if (!hash) {
-                 // No hash, no session -> Error
                  setStatus("No token found.");
                  setErrorMsg("The login link seems invalid or missing.");
             }
         });
     }
 
-  }, [router]);
+    return () => subscription.unsubscribe();
 
-  // === RENDER ===
+  }, [router, locale]); // Add locale to dependency array
+
   if (errorMsg) {
       return (
           <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50 gap-4">
@@ -81,7 +86,7 @@ export default function RedeemPage() {
                   <span>{errorMsg}</span>
               </div>
               <button 
-                onClick={() => router.push('/login')} 
+                onClick={() => router.push(`/${locale}/login`)} 
                 className="text-sm text-slate-500 underline hover:text-slate-800"
               >
                 Go to Login Page
@@ -95,5 +100,14 @@ export default function RedeemPage() {
       <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       <p className="text-slate-500 text-sm font-medium">{status}</p>
     </div>
+  );
+}
+
+// WRAPPER: Required because useSearchParams needs Suspense boundary
+export default function RedeemPage() {
+  return (
+    <Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><Loader2 className="animate-spin"/></div>}>
+      <RedeemLogic />
+    </Suspense>
   );
 }

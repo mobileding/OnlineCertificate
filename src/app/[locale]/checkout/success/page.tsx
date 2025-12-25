@@ -3,11 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { MagicLinkSender } from "./MagicLinkSender";
 import { CheckCircle } from "lucide-react";
-import { revalidatePath } from "next/cache"; // <--- CRITICAL IMPORT
+import { revalidatePath } from "next/cache";
 
 // 1. Init Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-12-15.clover", // Use your actual version
+  apiVersion: "2025-02-24.acacia", 
 });
 
 // 2. Init Supabase Admin
@@ -44,20 +44,19 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
 
   if (!customerEmail) return <div>No email found in payment details.</div>;
 
-  // 4. DETERMINE ENVIRONMENT (Fixes the Localhost Bug)
+  // 4. DETERMINE ENVIRONMENT
   const isProduction = process.env.NODE_ENV === 'production';
   const siteUrl = isProduction 
     ? 'https://onlinecertificate.org' 
     : 'http://localhost:3000';
 
-  // 5. GENERATE MAGIC LINK FIRST
-  // We do this first so we get the User ID (even if they are brand new)
+  // 5. GENERATE MAGIC LINK (Get the User ID)
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
     type: 'magiclink',
     email: customerEmail,
     options: {
-        // Redirect to the Dashboard with the "New Pro" flag
-        redirectTo: `${siteUrl}/${locale}/dashboard?new_pro=true`
+        // PASS LOCALE TO REDEEM PAGE
+        redirectTo: `${siteUrl}/auth/redeem?locale=${locale}`
     }
   });
 
@@ -65,30 +64,59 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
     console.error("Auth Error:", linkError);
   }
 
-  // 6. FORCE DB UPDATE (The Fix for "Upgrade Required" Error)
-  // We use the ID from step 5 to force the upgrade NOW.
+  // ============================================================
+  // 6. THE FIX: RETRY LOOP FOR PROFILE UPDATE
+  // ============================================================
   const userId = linkData.user?.id;
 
   if (userId) {
-      console.log(`[Success] Force upgrading User ${userId} to Pro`);
+      console.log(`[Success] Processing User ${userId}`);
+      
+      let attempts = 0;
+      let updated = false;
 
-      await supabaseAdmin
-        .from('profiles')
-        .update({ 
-            subscription_tier: 'pro',
-            subscription_id: subscriptionId,
-            updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
+      // Try up to 3 times (waiting 1s each time)
+      while (attempts < 3 && !updated) {
+          const { data, error } = await supabaseAdmin
+            .from('profiles')
+            .update({ 
+                subscription_tier: 'pro',
+                subscription_id: subscriptionId,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', userId)
+            .select(); // <--- Important: Returns the updated rows so we can check length
+
+          if (data && data.length > 0) {
+              updated = true;
+              console.log(`[Success] Upgraded User to Pro on attempt ${attempts + 1}`);
+          } else {
+              console.log(`[Retry] Profile not found yet. Waiting... (${attempts + 1}/3)`);
+              await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+              attempts++;
+          }
+      }
+
+      // FALLBACK: If the trigger failed completely, force INSERT (Upsert)
+      if (!updated) {
+           console.log(`[Fallback] Force creating profile for ${userId}`);
+           await supabaseAdmin.from('profiles').upsert({
+                id: userId,
+                subscription_tier: 'pro',
+                subscription_id: subscriptionId,
+                email: customerEmail, // If your profile has an email column
+                updated_at: new Date().toISOString()
+           });
+      }
   }
+  // ============================================================
 
-  // 7. CLEAR CACHE (The Fix for Session Issues)
-  // This ensures the Dashboard fetches the NEW "Pro" status, not the old "Free" one.
+
+  // 7. CLEAR CACHE
   revalidatePath('/', 'layout'); 
   revalidatePath(`/${locale}/dashboard`);
 
   // 8. EXECUTE REDIRECT
-  // Logic: Auto-login if they are new or haven't logged in recently.
   const lastSignIn = linkData.user?.last_sign_in_at;
   const createdAt = new Date(linkData.user?.created_at || new Date()).getTime();
   const now = new Date().getTime();
@@ -100,7 +128,7 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
       redirect(linkData.properties.action_link);
   }
 
-  // 9. FALLBACK (Manual Login for security)
+  // 9. MANUAL FALLBACK
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
