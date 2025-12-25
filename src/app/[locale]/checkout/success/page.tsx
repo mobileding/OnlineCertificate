@@ -2,7 +2,7 @@ import { Stripe } from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { MagicLinkSender } from "./MagicLinkSender";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, AlertTriangle } from "lucide-react"; // Added AlertTriangle
 import { revalidatePath } from "next/cache";
 
 // 1. Init Stripe
@@ -50,81 +50,62 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
     ? 'https://onlinecertificate.org' 
     : 'http://localhost:3000';
 
-  // 5. GENERATE MAGIC LINK (Get the User ID)
+  // 5. GENERATE MAGIC LINK (Get User ID)
+  // We explicitly ask Supabase to finding or creating the Auth User now.
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
     type: 'magiclink',
     email: customerEmail,
     options: {
-        // PASS LOCALE TO REDEEM PAGE
         redirectTo: `${siteUrl}/auth/redeem?locale=${locale}`
     }
   });
 
   if (linkError || !linkData.user) {
     console.error("Auth Error:", linkError);
+    return <div>Error generating login link. Please contact support.</div>;
   }
 
   // ============================================================
-  // 6. THE FIX: RETRY LOOP FOR PROFILE UPDATE
+  // 6. THE NUCLEAR FIX: UPSERT (Insert or Update)
   // ============================================================
-  const userId = linkData.user?.id;
+  const userId = linkData.user.id;
 
   if (userId) {
-      console.log(`[Success] Processing User ${userId}`);
+      console.log(`[Success] Processing User ${userId} with Upsert`);
       
-      let attempts = 0;
-      let updated = false;
+      // We use upsert so it works whether the profile exists or not.
+      const { error: upsertError } = await supabaseAdmin
+        .from('profiles')
+        .upsert({ 
+            id: userId,
+            email: customerEmail, // Ensure email is present if creating new row
+            subscription_tier: 'pro',
+            subscription_id: subscriptionId,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'id' }); // If ID exists, update it. If not, insert.
 
-      // Try up to 3 times (waiting 1s each time)
-      while (attempts < 3 && !updated) {
-          const { data, error } = await supabaseAdmin
-            .from('profiles')
-            .update({ 
-                subscription_tier: 'pro',
-                subscription_id: subscriptionId,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', userId)
-            .select(); // <--- Important: Returns the updated rows so we can check length
-
-          if (data && data.length > 0) {
-              updated = true;
-              console.log(`[Success] Upgraded User to Pro on attempt ${attempts + 1}`);
-          } else {
-              console.log(`[Retry] Profile not found yet. Waiting... (${attempts + 1}/3)`);
-              await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-              attempts++;
-          }
-      }
-
-      // FALLBACK: If the trigger failed completely, force INSERT (Upsert)
-      if (!updated) {
-           console.log(`[Fallback] Force creating profile for ${userId}`);
-           await supabaseAdmin.from('profiles').upsert({
-                id: userId,
-                subscription_tier: 'pro',
-                subscription_id: subscriptionId,
-                email: customerEmail, // If your profile has an email column
-                updated_at: new Date().toISOString()
-           });
+      if (upsertError) {
+          console.error("CRITICAL DB ERROR:", upsertError);
+          // We continue anyway so the user sees the success page
+      } else {
+          console.log(`[Success] Profile Upserted Successfully for ${userId}`);
       }
   }
   // ============================================================
-
 
   // 7. CLEAR CACHE
   revalidatePath('/', 'layout'); 
   revalidatePath(`/${locale}/dashboard`);
 
   // 8. EXECUTE REDIRECT
-  const lastSignIn = linkData.user?.last_sign_in_at;
-  const createdAt = new Date(linkData.user?.created_at || new Date()).getTime();
+  const lastSignIn = linkData.user.last_sign_in_at;
+  const createdAt = new Date(linkData.user.created_at || new Date()).getTime();
   const now = new Date().getTime();
   const isBrandNew = (now - createdAt) < 5 * 60 * 1000; 
 
   const shouldAutoLogin = !lastSignIn || isBrandNew;
 
-  if (shouldAutoLogin && linkData?.properties?.action_link) {
+  if (shouldAutoLogin && linkData.properties?.action_link) {
       redirect(linkData.properties.action_link);
   }
 
