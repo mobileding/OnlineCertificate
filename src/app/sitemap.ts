@@ -1,54 +1,61 @@
 import { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
-// 1. Setup a simple client (No cookies needed for public sitemaps)
+// 1. ADD THIS LINE:
+// This tells Next.js to regenerate the sitemap at most once every hour (3600 seconds).
+// This is perfect for SEO because Googlebot rarely checks more often than that.
+export const revalidate = 3600;
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const BASE_URL = 'https://onlinecertificate.org'; // Your actual domain
+const BASE_URL = 'https://onlinecertificate.org';
+const LOCALES = ['en', 'es', 'zh']; // <--- Define your languages
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   
-  // 2. Define your Static Pages (The ones that always exist)
-  const staticRoutes = [
+  // 1. Fetch Data
+  const { data: templates } = await supabase.from('templates').select('slug, created_at');
+  const { data: posts } = await supabase.from('posts').select('slug, created_at').eq('is_published', true);
+
+  // 2. Define Base Paths (Static Pages)
+  const basePaths = [
     '',          // Homepage
-    '/blog',     // Blog Index
-    '/login',    // Login
-    '/pricing',  // Pricing
-  ].map((route) => ({
-    url: `${BASE_URL}${route}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: 1.0,
-  }));
+    '/blog',     
+    '/login',    
+    '/pricing',  
+  ];
 
-  // 3. Fetch Dynamic SEO Templates from DB
-  const { data: templates } = await supabase
-    .from('templates')
-    .select('slug, created_at');
+  // 3. Helper to generate localized entries for a single path
+  const generateLocalizedEntries = (path: string, date: Date, priority: number) => {
+    return LOCALES.map(locale => ({
+      // Generates: /en/pricing, /es/pricing, /zh/pricing
+      url: `${BASE_URL}/${locale}${path}`,
+      lastModified: date,
+      changeFrequency: 'weekly' as const,
+      priority: priority
+    }));
+  };
 
-  const templateRoutes = (templates || []).map((t) => ({
-    url: `${BASE_URL}/create/${t.slug}`,
-    lastModified: new Date(t.created_at),
-    changeFrequency: 'monthly' as const,
-    priority: 0.8, // Slightly lower priority than homepage
-  }));
+  // 4. Build the Sitemap
+  let allRoutes: MetadataRoute.Sitemap = [];
 
-  // 4. (Optional) Fetch Blog Posts if you want them indexed too
-  const { data: posts } = await supabase
-    .from('posts')
-    .select('slug, created_at')
-    .eq('is_published', true);
+  // Static Routes
+  basePaths.forEach(path => {
+    allRoutes.push(...generateLocalizedEntries(path, new Date(), 1.0));
+  });
 
-  const blogRoutes = (posts || []).map((post) => ({
-    url: `${BASE_URL}/blog/${post.slug}`,
-    lastModified: new Date(post.created_at),
-    changeFrequency: 'weekly' as const,
-    priority: 0.9,
-  }));
+  // Template Routes
+  (templates || []).forEach(t => {
+    allRoutes.push(...generateLocalizedEntries(`/create/${t.slug}`, new Date(t.created_at), 0.8));
+  });
 
-  // 5. Combine everything
-  return [...staticRoutes, ...templateRoutes, ...blogRoutes];
+  // Blog Routes
+  (posts || []).forEach(post => {
+    allRoutes.push(...generateLocalizedEntries(`/blog/${post.slug}`, new Date(post.created_at), 0.9));
+  });
+
+  return allRoutes;
 }

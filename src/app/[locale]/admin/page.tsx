@@ -1,9 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
+//import Link from 'next/link';
+import { Link } from "@/i18n/routing";
 import { FileText, Users, ArrowRight, LayoutTemplate, Target, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { AdminUserRow } from '../../components/AdminUserRow';
+import { AdminUserRow } from '@/components/AdminUserRow';
 
 // --- PAGE COMPONENT ---
 export default async function AdminPage({

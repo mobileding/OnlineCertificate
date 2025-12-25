@@ -129,14 +129,11 @@ A **${targetKeyword}** is more than just a piece of paper—it's a memory. By ta
 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                         Cover Image (Upload)
                     </label>
-<div className="relative group">
-                   <input 
-                          type="file"           // <--- Changed to file
-                          name="cover_image"    // <--- Name matches Server Action
-                          accept="image/*"      // <--- Restrict to images
-                          className="w-full p-2 border border-slate-200 rounded-md text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all cursor-pointer" 
-                        />
-</div>
+                    <input 
+                      name="cover_image" 
+                      placeholder="https://..." 
+                      className="w-full p-2 border border-slate-200 rounded-md text-sm text-slate-600 focus:border-blue-500 outline-none" 
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Slug (Optional)</label>

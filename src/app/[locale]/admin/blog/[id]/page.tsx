@@ -3,9 +3,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
+import { Link } from "@/i18n/routing";
 import { ArrowLeft, Save, Eye, Trash2 } from 'lucide-react';
-import { updateBlogPost, deleteBlogPost } from '../../../actions/blog';
+import { updateBlogPost, deleteBlogPost } from '@/actions/blog';
 
 // SAFE INTERFACE: Accepts params as a Promise OR a regular object
 interface PageProps {

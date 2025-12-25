@@ -1,10 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
+import { Link } from "@/i18n/routing";
 import { ArrowLeft, Trash2, ExternalLink, ChevronLeft, ChevronRight, LayoutTemplate } from 'lucide-react';
 
-import { createSeoTemplate, getSeoTemplates, deleteSeoTemplate } from '../../actions/admin';
+import { createSeoTemplate, getSeoTemplates, deleteSeoTemplate } from '@/actions/admin';
 
 // Define Props for Search Params (Query String)
 interface PageProps {
@@ -164,9 +164,10 @@ export default async function CreateTemplatePage({ searchParams }: PageProps) {
             
             {/* List Container */}
             <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-              {templates.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 italic text-sm">No templates found.</div>
-              ) : (
+             {/* Change templates.length to (templates || []).length */}
+{(templates || []).length === 0 ? (
+  <div className="p-8 text-center text-slate-400 italic text-sm">No templates found.</div>
+) : (
                 <ul className="divide-y divide-slate-100">
                   {templates.map((t: any) => (
                     <li key={t.id} className="p-3 hover:bg-slate-50 transition-colors group">

@@ -1,12 +1,13 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import Link from 'next/link';
-import { CheckCircle, LayoutTemplate, FileText, RefreshCw, Trash2 } from 'lucide-react';
+import { Link } from "@/i18n/routing"; 
+// 1. Added ArrowLeft to imports
+import { CheckCircle, LayoutTemplate, FileText, RefreshCw, Trash2, ArrowLeft } from 'lucide-react';
 import { redirect } from 'next/navigation';
-import { generateSeoMissions } from '../../actions/missions';
-import { MissionGenerator } from '../../../components/MissionGenerator';
+import { generateSeoMissions } from '@/actions/missions';
+import { MissionGenerator } from '@/components/MissionGenerator';
 
-// --- ACTIONS ---
+// ... (Keep your existing Actions: markComplete, deleteMission) ...
 
 async function markComplete(formData: FormData) {
   "use server";
@@ -47,28 +48,23 @@ export default async function TaskDashboard() {
     { cookies: { getAll() { return cookieStore.getAll() } } }
   );
 
-  // 1. Get Newest 5 Pending Tasks (So you see what you just added)
+  // ... (Keep your data fetching logic) ...
   const { data: todaysTasks, count: pendingCount } = await supabase
     .from('seo_missions')
     .select('*', { count: 'exact' })
     .eq('status', 'pending')
-    .order('created_at', { ascending: false }) // Newest first
+    .order('created_at', { ascending: false })
     .limit(5);
 
-  // 2. Analytics
   const { data: completed } = await supabase
     .from('seo_missions')
     .select('completed_at')
     .eq('status', 'completed');
 
   const totalCompleted = completed?.length || 0;
-  
   const now = new Date();
-  // Week Calculation
   const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); 
   const completedThisWeek = completed?.filter(t => new Date(t.completed_at) >= startOfWeek).length || 0;
-  
-  // Month Calculation
   const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const completedThisMonth = completed?.filter(t => new Date(t.completed_at) >= startOfMonth).length || 0;
 
@@ -76,6 +72,11 @@ export default async function TaskDashboard() {
     <main className="min-h-screen bg-slate-50 py-12 px-6">
       <div className="max-w-4xl mx-auto">
         
+        {/* 2. NEW LINK: Back to Admin Dashboard */}
+        <Link href="/admin" className="flex items-center text-slate-500 hover:text-slate-800 mb-6 transition-colors text-sm font-medium">
+            <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
+        </Link>
+
         {/* HEADER & CONTROLS */}
         <div className="mb-8 flex flex-col md:flex-row justify-between items-end gap-4">
             <div>
@@ -85,11 +86,13 @@ export default async function TaskDashboard() {
                 </p>
             </div>
             
-            {/* NEW: AI GENERATE BUTTON */}
+            {/* AI GENERATE BUTTON */}
             <MissionGenerator />
         </div>
 
-        {/* PROGRESS DASHBOARD (Week / Month / Lifetime) */}
+        {/* ... (Rest of your UI stays exactly the same) ... */}
+        
+        {/* PROGRESS DASHBOARD */}
         <div className="grid grid-cols-3 gap-4 mb-8">
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">This Week</p>
@@ -169,7 +172,7 @@ export default async function TaskDashboard() {
             ))}
         </div>
         
-        {/* Refresh Button (Optional if you want to see older tasks) */}
+        {/* Refresh Button */}
         {pendingCount && pendingCount > 5 && (
             <div className="mt-8 text-center">
                 <button className="text-slate-400 hover:text-slate-600 flex items-center gap-2 mx-auto text-sm">
