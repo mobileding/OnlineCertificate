@@ -36,25 +36,33 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
     redirect(`/${locale}/login`);
   }
 
-  // 2. === THE GATEKEEPER ===
-const { data: profile } = await supabase
+const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/${locale}/login`);
+
+  // 2. === THE GATEKEEPER (FINAL FIX) ===
+  const { data: profile } = await supabase
     .from('profiles')
-    .select('subscription_tier')
+    .select('subscription_tier, created_at')
     .eq('id', user.id)
     .single();
 
   const isPaid = profile?.subscription_tier === 'pro' || profile?.subscription_tier === 'elite';
-  
-  // --- THE FIX START ---
-  // Check if the URL has ?new_pro=true
-  const search = await searchParams;
-  const isFreshUpgrade = search?.new_pro === 'true';
 
-  // LOGIC: If they are NOT paid, AND they are NOT a fresh upgrade -> Kick them out.
-  // "isFreshUpgrade" acts as our VIP Pass to bypass the check for this one visit.
-  if (!isPaid && !isFreshUpgrade) {
-    redirect(`/${locale}/pricing?error=upgrade_required`);
+  // --- THE VIP PASS ---
+  // Calculate if the user is "Brand New" (created in the last 10 minutes)
+  const createdAt = new Date(user.created_at).getTime();
+  const now = new Date().getTime();
+  const isBrandNew = (now - createdAt) < 10 * 60 * 1000; // 10 Minutes
+
+  // LOGIC: 
+  // 1. If they are Paid -> Allow.
+  // 2. If they are Brand New -> Allow (Assume payment succeeded, DB is just slow).
+  // 3. Otherwise -> Kick out.
+  if (!isPaid && !isBrandNew) {
+      console.log(`[Dashboard] Blocking User ${user.email}. Tier: ${profile?.subscription_tier}, New: ${isBrandNew}`);
+      redirect(`/${locale}/pricing?error=upgrade_required`);
   }
+  // ===========
   // ==========================
 
   // 3. Fetch Certificates
