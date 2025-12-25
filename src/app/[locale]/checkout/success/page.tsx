@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache"; // <--- CRITICAL IMPORT
 
 // 1. Init Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-02-24.acacia", // Use your actual version
+  apiVersion: "2025-12-15.clover", // Use your actual version
 });
 
 // 2. Init Supabase Admin
