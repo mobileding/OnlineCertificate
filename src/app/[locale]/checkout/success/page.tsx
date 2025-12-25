@@ -76,17 +76,21 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
       }
   }
 
-  // 6. EXECUTE REDIRECT (LOCALE AWARE)
+// 6. EXECUTE REDIRECT (LOCALE AWARE)
   if (shouldAutoLogin) {
-      // Determines the base URL dynamically
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      // FIX: Force production URL when on Vercel
+      // We check NODE_ENV to decide the domain. No more accidental localhost.
+      const isProduction = process.env.NODE_ENV === 'production';
+      
+      const siteUrl = isProduction 
+        ? 'https://onlinecertificate.org' 
+        : 'http://localhost:3000';
       
       const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
         email: customerEmail,
         options: {
-            // FIX: Include ${locale} in the redirect URL
-            // This ensures they go to /en/dashboard instead of just /dashboard
+            // Now includes the correct domain + locale
             redirectTo: `${siteUrl}/${locale}/dashboard?new_pro=true`
         }
       });
@@ -95,7 +99,6 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
           redirect(linkData.properties.action_link);
       }
   }
-
   // 7. EXISTING USER FALLBACK
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">

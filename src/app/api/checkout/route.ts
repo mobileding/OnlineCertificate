@@ -1,4 +1,4 @@
-import { stripe } from "../../../lib/stripe"; 
+import { stripe } from "@/lib/stripe"; // Updated to use alias '@'
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 export async function POST(req: Request) {
   try {
     // 0. Parse the Plan from the Frontend Request
-    const { plan, locale } = await req.json().catch(() => ({ plan: 'pro', locale: 'en' })); // <--- ADDED LOCALE SUPPORT (Optional)
+    const { plan, locale } = await req.json().catch(() => ({ plan: 'pro', locale: 'en' }));
 
     // 1. Setup Supabase & Get User
     const cookieStore = await cookies();
@@ -72,19 +72,20 @@ export async function POST(req: Request) {
     
     // Logic: If on Vercel (production), use the Real URL. Otherwise, Localhost.
     const isProduction = process.env.NODE_ENV === 'production';
+    
+    // This variable 'domain' is what Stripe will use to send the user back.
     const domain = isProduction 
         ? (process.env.NEXT_PUBLIC_SITE_URL || 'https://onlinecertificate.org') // Fallback safety
         : 'http://localhost:3000';
 
-    // Optional: Handle Locale (e.g. /es/checkout/success vs /checkout/success)
-    // If you passed 'locale' from the frontend, we insert it here.
+    // Handle Locale (e.g. /es/checkout/success vs /checkout/success)
     const localePath = locale && locale !== 'en' ? `/${locale}` : '';
 
     let sessionConfig: any = {
       payment_method_types: ["card"],
       line_items: [{ price: targetPriceId, quantity: 1 }], 
       mode: "subscription",
-      // FIX IS HERE: Use 'domain' variable instead of 'origin'
+      // USE THE 'domain' VARIABLE HERE
       success_url: `${domain}${localePath}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${domain}${localePath}/pricing?canceled=true`,
       allow_promotion_codes: true,
