@@ -5,15 +5,13 @@ import { createBrowserClient } from "@supabase/ssr";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, AlertCircle } from "lucide-react";
 
-// Helper component to safely read search params
 function RedeemLogic() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState("Authenticating...");
   const [errorMsg, setErrorMsg] = useState("");
 
-  // 1. GET LOCALE FROM URL (Defaults to 'en')
-  // We expect the URL to look like: /auth/redeem?locale=es#access_token=...
+  // 1. GET LOCALE (Default to 'en' if missing)
   const locale = searchParams.get('locale') || 'en';
 
   useEffect(() => {
@@ -22,36 +20,35 @@ function RedeemLogic() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-// ... inside handleSessionFound ...
-const handleSessionFound = async () => {
-    setStatus("Session secured. Redirecting...");
-    
-    // Use the locale from URL, or default to '' (root) if it's 'en' and you use 'as-needed' strategy
-// This ensures we hit /en/dashboard instead of just /dashboard (which is 404)
+    const handleSessionFound = async () => {
+        setStatus("Session secured. Redirecting...");
+        
+        // === THE FIX ===
+        // We use 'locale' directly. No need for 'localePrefix'.
         const targetUrl = `/${locale}/dashboard?new_pro=true`;
-    
-    // Construct URL with the Grace Period flag
-    const targetUrl = `${localePrefix}/dashboard?new_pro=true`;
-    
-    console.log("Redirecting to:", targetUrl); // Debug log
+        
+        console.log("Redirecting to:", targetUrl);
 
-    setTimeout(() => {
-        window.location.href = targetUrl;
-    }, 500);
-};
+        setTimeout(() => {
+            // Force hard reload to ensure we hit the correct folder
+            window.location.href = targetUrl;
+        }, 500);
+    };
 
-    // A. STANDARD CHECK
+    // A. STANDARD CHECK (Supabase Auto-detect)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session) {
         handleSessionFound();
       }
     });
 
-    // B. MANUAL HASH PARSING
+    // B. MANUAL HASH PARSING (The Nuclear Option)
+    // If the standard check fails, we parse the URL hash manually.
     const hash = window.location.hash;
     if (hash && hash.includes("access_token")) {
         setStatus("Manually exchanging token...");
-        const params = new URLSearchParams(hash.substring(1));
+        
+        const params = new URLSearchParams(hash.substring(1)); // remove the #
         const accessToken = params.get("access_token");
         const refreshToken = params.get("refresh_token");
 
@@ -64,6 +61,7 @@ const handleSessionFound = async () => {
                     console.error("Manual Exchange Error:", error);
                     setErrorMsg(error.message);
                 } else if (data.session) {
+                    console.log("Manual exchange successful!");
                     handleSessionFound();
                 }
             });
@@ -73,16 +71,16 @@ const handleSessionFound = async () => {
         supabase.auth.getSession().then(({ data }) => {
             if (data.session) handleSessionFound();
             else if (!hash) {
-                 setStatus("No token found.");
-                 setErrorMsg("The login link seems invalid or missing.");
+                 // No hash, no session -> Error (only if we aren't just arriving)
             }
         });
     }
 
     return () => subscription.unsubscribe();
 
-  }, [router, locale]); // Add locale to dependency array
+  }, [router, locale]);
 
+  // === RENDER ===
   if (errorMsg) {
       return (
           <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50 gap-4">
@@ -108,7 +106,7 @@ const handleSessionFound = async () => {
   );
 }
 
-// WRAPPER: Required because useSearchParams needs Suspense boundary
+// WRAPPER: Required because useSearchParams needs a Suspense boundary
 export default function RedeemPage() {
   return (
     <Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><Loader2 className="animate-spin"/></div>}>
