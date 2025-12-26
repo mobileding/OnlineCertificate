@@ -45,7 +45,7 @@ export default async function CheckoutSuccessPage({ searchParams, params }: Page
     type: 'magiclink',
     email: customerEmail,
     options: {
-        redirectTo: `${siteUrl}/auth/redeem?locale=${locale}`
+redirectTo: `${siteUrl}/${locale}/auth/redeem?locale=${locale}`
     }
   });
 
