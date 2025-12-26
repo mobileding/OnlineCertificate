@@ -1,5 +1,6 @@
 import { ShieldCheck, Zap, Globe, Lock, Award, FileCheck, ChevronDown, ArrowRight, CheckCircle2 } from "lucide-react";
-import Link from "next/link";
+//import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { useTranslations } from 'next-intl';
 
 export function HomeDetails() {
@@ -136,7 +137,7 @@ export function HomeDetails() {
          <div className="max-w-xl mx-auto">
              <h2 className="text-2xl font-serif font-bold mb-4">{t('cta_title')}</h2>
              <div className="flex justify-center gap-4">
-                 <Link href="/signup" className="bg-blue-600 text-white px-8 py-3 rounded-full text-sm font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/50 flex items-center gap-2">
+                 <Link href="/pricing" className="bg-blue-600 text-white px-8 py-3 rounded-full text-sm font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/50 flex items-center gap-2">
                     {t('cta_btn')} <ArrowRight size={16} />
                  </Link>
              </div>
