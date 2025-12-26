@@ -15,7 +15,7 @@ function PricingContent() {
     
   const [loading, setLoading] = useState<string | null>(null);
   const [userTier, setUserTier] = useState<string>('guest'); 
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false); // State for Modal
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false); 
   const router = useRouter(); 
 
   useEffect(() => {
@@ -42,19 +42,14 @@ function PricingContent() {
     checkUser();
   }, []);
 
-  // 1. SPLIT LOGIC: Just opens the modal or proceeds to Stripe URL
   const handleCheckoutClick = (plan: 'pro' | 'elite') => {
-    // If upgrading to Elite, show our nice modal instead of window.confirm
     if (userTier === 'pro' && plan === 'elite') {
         setShowUpgradeModal(true);
         return;
     }
-
-    // Otherwise, proceed to normal checkout (redirects to Stripe)
     processPayment(plan, false);
   };
 
-  // 2. THE ACTUAL API CALL
   const processPayment = async (plan: 'pro' | 'elite', isUpgrade: boolean) => {
     setLoading(plan);
 
@@ -78,30 +73,30 @@ function PricingContent() {
 
         const data = await res.json();
         
-        // Handle Instant Upgrade (Success: true)
         if (data.success) {
-            // Optional: Add a small delay so user sees the spinner finish
             setTimeout(() => {
-                alert("Upgrade Successful! You are now Elite.");
+                // Translated Alert
+                alert(t('modal_upgrade.alert_success'));
                 window.location.reload(); 
             }, 500);
             return;
         }
 
-        // Handle Standard Checkout (Redirect URL)
         if (data.url) {
             window.location.href = data.url;
         } else {
             setLoading(null);
             setShowUpgradeModal(false);
-            alert("Something went wrong. Please try again.");
+            // Translated Alert
+            alert(t('modal_upgrade.alert_error'));
         }
 
     } catch (error) {
         console.error(error);
         setLoading(null);
         setShowUpgradeModal(false);
-        alert("Connection error. Please try again.");
+        // Translated Alert
+        alert(t('modal_upgrade.alert_connection'));
     }
   };
 
@@ -111,22 +106,21 @@ function PricingContent() {
       {/* === CUSTOM UPGRADE MODAL === */}
       {showUpgradeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop Blur */}
             <div 
                 className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
                 onClick={() => !loading && setShowUpgradeModal(false)}
             />
 
-            {/* Modal Content */}
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 
-                {/* Header with Icon */}
+                {/* Header */}
                 <div className="bg-blue-600 p-6 text-center">
                     <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
                         <Rocket className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="text-2xl font-serif font-bold text-white">Confirm Upgrade</h3>
-                    <p className="text-blue-100 text-sm mt-1">Move to the Elite Plan</p>
+                    {/* TRANSLATED TITLE */}
+                    <h3 className="text-2xl font-serif font-bold text-white">{t('modal_upgrade.title')}</h3>
+                    <p className="text-blue-100 text-sm mt-1">{t('modal_upgrade.subtitle')}</p>
                 </div>
 
                 {/* Body */}
@@ -135,8 +129,9 @@ function PricingContent() {
                         <div className="flex items-start gap-3">
                             <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                             <div className="text-sm text-slate-600">
-                                <p className="font-semibold text-slate-800 mb-1">Immediate Prorated Charge</p>
-                                <p>We will calculate the difference between Pro and Elite and charge your card on file immediately.</p>
+                                {/* TRANSLATED WARNING */}
+                                <p className="font-semibold text-slate-800 mb-1">{t('modal_upgrade.warning_title')}</p>
+                                <p>{t('modal_upgrade.warning_desc')}</p>
                             </div>
                         </div>
                     </div>
@@ -150,10 +145,11 @@ function PricingContent() {
                             {loading === 'elite' ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    Processing...
+                                    {/* TRANSLATED BUTTON STATE */}
+                                    {t('modal_upgrade.btn_processing')}
                                 </>
                             ) : (
-                                "Confirm & Upgrade"
+                                t('modal_upgrade.btn_confirm')
                             )}
                         </button>
                         
@@ -162,7 +158,8 @@ function PricingContent() {
                             disabled={loading !== null}
                             className="w-full bg-white hover:bg-slate-50 text-slate-500 font-medium py-3 rounded-lg transition-colors"
                         >
-                            Cancel
+                            {/* TRANSLATED CANCEL */}
+                            {t('modal_upgrade.btn_cancel')}
                         </button>
                     </div>
                 </div>

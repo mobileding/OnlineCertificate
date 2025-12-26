@@ -48,6 +48,18 @@
       "cta_locked": "Locked"
     }
   },
+"modal_upgrade": {
+      "title": "Confirm Upgrade",
+      "subtitle": "Move to the Elite Plan",
+      "warning_title": "Immediate Prorated Charge",
+      "warning_desc": "We will calculate the difference between Pro and Elite and charge your card on file immediately.",
+      "btn_confirm": "Confirm & Upgrade",
+      "btn_processing": "Processing...",
+      "btn_cancel": "Cancel",
+      "alert_success": "Upgrade Successful! You are now Elite.",
+      "alert_error": "Something went wrong. Please try again.",
+      "alert_connection": "Connection error. Please try again."
+    },
   "Contact": {
     "hero_title": "Get in Touch",
     "hero_desc": "Have questions about your certificates? Our support team is available to assist with verification and account inquiries.",
