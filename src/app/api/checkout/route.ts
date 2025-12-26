@@ -78,8 +78,15 @@ export async function POST(req: Request) {
         ? (process.env.NEXT_PUBLIC_SITE_URL || 'https://onlinecertificate.org') // Fallback safety
         : 'http://localhost:3000';
 
-    // Handle Locale (e.g. /es/checkout/success vs /checkout/success)
-    const localePath = locale && locale !== 'en' ? `/${locale}` : '';
+// --- CHANGE THIS SECTION ---
+    
+    // OLD CODE (Was causing 404 because it left 'en' empty):
+    // const localePath = locale && locale !== 'en' ? `/${locale}` : '';
+
+    // NEW FIX: Always force the locale prefix (e.g. '/en')
+    // This ensures we hit the [locale] folder every time.
+    const localePath = `/${locale || 'en'}`;
+
 
     let sessionConfig: any = {
       payment_method_types: ["card"],
