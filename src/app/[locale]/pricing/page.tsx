@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ShieldCheck, Zap, X, Mail, UploadCloud, LayoutDashboard, Image as ImageIcon, Loader2, Crown, Rocket, MousePointerClick, BadgeCheck, Lock } from 'lucide-react';
+import { Check, ShieldCheck, Zap, X, Mail, UploadCloud, LayoutDashboard, Image as ImageIcon, Loader2, Crown, Rocket, MousePointerClick, BadgeCheck, Lock, AlertCircle } from 'lucide-react';
 import { createBrowserClient } from "@supabase/ssr";
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,7 @@ function PricingContent() {
     
   const [loading, setLoading] = useState<string | null>(null);
   const [userTier, setUserTier] = useState<string>('guest'); 
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false); // State for Modal
   const router = useRouter(); 
 
   useEffect(() => {
@@ -41,17 +42,20 @@ function PricingContent() {
     checkUser();
   }, []);
 
-  const handleCheckout = async (plan: 'pro' | 'elite') => {
-    const isUpgrade = userTier === 'pro' && plan === 'elite';
-
-    // 1. CONFIRMATION DIALOG FOR UPGRADES
-    if (isUpgrade) {
-        const confirmed = window.confirm(
-            "Confirm Upgrade to Elite?\n\nThis will immediately charge the prorated difference to your card on file."
-        );
-        if (!confirmed) return; // Stop if they click Cancel
+  // 1. SPLIT LOGIC: Just opens the modal or proceeds to Stripe URL
+  const handleCheckoutClick = (plan: 'pro' | 'elite') => {
+    // If upgrading to Elite, show our nice modal instead of window.confirm
+    if (userTier === 'pro' && plan === 'elite') {
+        setShowUpgradeModal(true);
+        return;
     }
 
+    // Otherwise, proceed to normal checkout (redirects to Stripe)
+    processPayment(plan, false);
+  };
+
+  // 2. THE ACTUAL API CALL
+  const processPayment = async (plan: 'pro' | 'elite', isUpgrade: boolean) => {
     setLoading(plan);
 
     try {
@@ -68,35 +72,103 @@ function PricingContent() {
             const errorText = await res.text();
             alert(`Payment failed: ${errorText}`);
             setLoading(null);
+            setShowUpgradeModal(false);
             return;
         }
 
         const data = await res.json();
         
-        // 2. FIX: HANDLE SUCCESSFUL UPGRADE (No URL returned)
+        // Handle Instant Upgrade (Success: true)
         if (data.success) {
-            alert("Upgrade Successful! You are now on the Elite plan.");
-            window.location.reload(); // Refresh page to update UI
+            // Optional: Add a small delay so user sees the spinner finish
+            setTimeout(() => {
+                alert("Upgrade Successful! You are now Elite.");
+                window.location.reload(); 
+            }, 500);
             return;
         }
 
-        // 3. STANDARD CHECKOUT (URL returned)
+        // Handle Standard Checkout (Redirect URL)
         if (data.url) {
             window.location.href = data.url;
         } else {
             setLoading(null);
+            setShowUpgradeModal(false);
             alert("Something went wrong. Please try again.");
         }
 
     } catch (error) {
         console.error(error);
         setLoading(null);
+        setShowUpgradeModal(false);
         alert("Connection error. Please try again.");
     }
   };
 
   return (
-    <div className="bg-slate-50 pt-20 pb-32 px-4 min-h-screen font-sans">
+    <div className="bg-slate-50 pt-20 pb-32 px-4 min-h-screen font-sans relative">
+
+      {/* === CUSTOM UPGRADE MODAL === */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop Blur */}
+            <div 
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+                onClick={() => !loading && setShowUpgradeModal(false)}
+            />
+
+            {/* Modal Content */}
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                
+                {/* Header with Icon */}
+                <div className="bg-blue-600 p-6 text-center">
+                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
+                        <Rocket className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-serif font-bold text-white">Confirm Upgrade</h3>
+                    <p className="text-blue-100 text-sm mt-1">Move to the Elite Plan</p>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 md:p-8">
+                    <div className="bg-slate-50 border border-slate-100 rounded-lg p-4 mb-6">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <div className="text-sm text-slate-600">
+                                <p className="font-semibold text-slate-800 mb-1">Immediate Prorated Charge</p>
+                                <p>We will calculate the difference between Pro and Elite and charge your card on file immediately.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={() => processPayment('elite', true)}
+                            disabled={loading === 'elite'}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
+                        >
+                            {loading === 'elite' ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Processing...
+                                </>
+                            ) : (
+                                "Confirm & Upgrade"
+                            )}
+                        </button>
+                        
+                        <button
+                            onClick={() => setShowUpgradeModal(false)}
+                            disabled={loading !== null}
+                            className="w-full bg-white hover:bg-slate-50 text-slate-500 font-medium py-3 rounded-lg transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
 
       {/* SUCCESS BANNER */}
       {isSuccess && (
@@ -192,7 +264,7 @@ function PricingContent() {
               </div>
                
               <button 
-                onClick={() => handleCheckout('pro')}
+                onClick={() => handleCheckoutClick('pro')}
                 disabled={loading !== null || userTier === 'pro' || userTier === 'elite'}
                 className={`w-full py-3 rounded font-bold transition-all flex items-center justify-center gap-2
                    ${(userTier === 'pro' || userTier === 'elite') 
@@ -226,7 +298,7 @@ function PricingContent() {
                   {t('tier_elite.lock_desc')}
               </p>
               <button 
-                  onClick={() => handleCheckout('pro')}
+                  onClick={() => handleCheckoutClick('pro')}
                   className="text-xs font-bold text-blue-700 hover:underline border border-blue-200 bg-blue-50 px-3 py-1.5 rounded"
               >
                   {t('tier_elite.lock_btn')}
@@ -267,7 +339,7 @@ function PricingContent() {
           </div>
            
           <button 
-            onClick={() => handleCheckout('elite')}
+            onClick={() => handleCheckoutClick('elite')}
             disabled={userTier !== 'pro' || loading !== null} 
             className={`w-full py-3 rounded font-bold text-center block text-sm transition-all
                 ${userTier === 'elite'
