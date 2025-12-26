@@ -6,14 +6,13 @@ import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl'; // <--- IMPORTED
+import { useTranslations } from 'next-intl';
 
-// 1. Rename your main component to "PricingContent"
 function PricingContent() {
-  const t = useTranslations('Pricing'); // <--- HOOK INITIALIZED
+  const t = useTranslations('Pricing');
   const searchParams = useSearchParams();
   const isSuccess = searchParams.get('success') === 'true';
-   
+    
   const [loading, setLoading] = useState<string | null>(null);
   const [userTier, setUserTier] = useState<string>('guest'); 
   const router = useRouter(); 
@@ -24,7 +23,7 @@ function PricingContent() {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
-       
+        
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
@@ -43,6 +42,16 @@ function PricingContent() {
   }, []);
 
   const handleCheckout = async (plan: 'pro' | 'elite') => {
+    const isUpgrade = userTier === 'pro' && plan === 'elite';
+
+    // 1. CONFIRMATION DIALOG FOR UPGRADES
+    if (isUpgrade) {
+        const confirmed = window.confirm(
+            "Confirm Upgrade to Elite?\n\nThis will immediately charge the prorated difference to your card on file."
+        );
+        if (!confirmed) return; // Stop if they click Cancel
+    }
+
     setLoading(plan);
 
     try {
@@ -51,7 +60,7 @@ function PricingContent() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 plan: plan,
-                isUpgrade: userTier === 'pro' && plan === 'elite'
+                isUpgrade: isUpgrade
             }),
         });
 
@@ -64,6 +73,14 @@ function PricingContent() {
 
         const data = await res.json();
         
+        // 2. FIX: HANDLE SUCCESSFUL UPGRADE (No URL returned)
+        if (data.success) {
+            alert("Upgrade Successful! You are now on the Elite plan.");
+            window.location.reload(); // Refresh page to update UI
+            return;
+        }
+
+        // 3. STANDARD CHECKOUT (URL returned)
         if (data.url) {
             window.location.href = data.url;
         } else {
@@ -88,8 +105,8 @@ function PricingContent() {
           <Link href="/" className="underline font-bold ml-2">{t('success_link')} &rarr;</Link>
         </div>
       )}
-       
-      {/* HEADER: Institutional Tone */}
+        
+      {/* HEADER */}
       <div className="max-w-4xl mx-auto text-center mb-16">
         <h1 className="text-4xl md:text-5xl font-serif font-bold text-slate-900 mb-6 tracking-tight">
             {t('title')}
@@ -99,7 +116,7 @@ function PricingContent() {
         </p>
       </div>
 
-      {/* === PRICING GRID (3 Columns - Flat Design) === */}
+      {/* === PRICING GRID === */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto items-start">
         
         {/* === TIER 1: PUBLIC ACCESS (Visitor) === */}
@@ -141,7 +158,6 @@ function PricingContent() {
         {/* === TIER 2: PROFESSIONAL (Pro) === */}
         <div className="bg-white p-0 rounded-lg border-2 border-blue-600 shadow-md relative flex flex-col h-full transform md:-translate-y-2">
            
-           {/* Subtle Banner */}
            <div className="bg-blue-600 text-white text-xs font-bold text-center py-1 uppercase tracking-wider">
              {t('tier_pro.badge')}
            </div>
@@ -179,14 +195,14 @@ function PricingContent() {
                 onClick={() => handleCheckout('pro')}
                 disabled={loading !== null || userTier === 'pro' || userTier === 'elite'}
                 className={`w-full py-3 rounded font-bold transition-all flex items-center justify-center gap-2
-                    ${(userTier === 'pro' || userTier === 'elite') 
-                        ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-default' 
-                        : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
-                    }`}
+                   ${(userTier === 'pro' || userTier === 'elite') 
+                       ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-default' 
+                       : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                   }`}
               >
                 {loading === 'pro' ? <Loader2 className="animate-spin" /> : 
-                    userTier === 'pro' ? t('tier_pro.cta_current') : 
-                    userTier === 'elite' ? t('tier_pro.cta_included') : t('tier_pro.cta_select')
+                   userTier === 'pro' ? t('tier_pro.cta_current') : 
+                   userTier === 'elite' ? t('tier_pro.cta_included') : t('tier_pro.cta_select')
                 }
               </button>
            </div>
@@ -195,8 +211,8 @@ function PricingContent() {
         {/* === TIER 3: INSTITUTIONAL (Elite) === */}
         <div className={`p-8 rounded-lg border flex flex-col relative h-full
             ${(userTier === 'pro' || userTier === 'elite')
-                ? 'bg-slate-50 border-slate-300' // Accessible
-                : 'bg-slate-50/50 border-slate-200' // Locked
+                ? 'bg-slate-50 border-slate-300' 
+                : 'bg-slate-50/50 border-slate-200' 
             }`}>
            
            {/* THE LOCK OVERLAY */}
@@ -273,7 +289,6 @@ function PricingContent() {
   );
 }
 
-// 2. Export the wrapper that includes Suspense
 export default function PricingPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading Pricing...</div>}>
