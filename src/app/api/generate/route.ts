@@ -6,11 +6,10 @@ export async function POST(req: Request) {
     const body = await req.json();
     const prompt = body.prompt || "Default Award";
 
-    // 1. Initialize Client (New SDK)
+    // 1. Initialize Client
     const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-    // 2. Define System Instruction
-    // UPDATED: Added 'signature_text' to extracted fields and specific logic to handle "from X"
+    // 2. Define System Instruction (UPDATED WITH GUARDRAILS)
     const systemInstruction = `
       You are a specific JSON generator for novelty and appreciation awards. 
       You are NOT a medical or legal professional. This is for fun/recognition only.
@@ -23,7 +22,18 @@ export async function POST(req: Request) {
       2. REMOVE the "from X" phrase from 'action_text'. Keep the action text focused on the accomplishment.
       3. If the prompt implies a medical diagnosis or legal judgement, generalize it to "Service Award" or "Participation" to stay safe.
       
-      Example JSON Structure:
+      🛡️ ABUSE DETECTION GUARDRAILS:
+      If the user input contains:
+      - Hate speech, racism, or bigotry
+      - Sexually explicit content
+      - Harassment, severe insults, or bullying
+      - Promotion of violence or self-harm
+      
+      DO NOT GENERATE THE CERTIFICATE. 
+      INSTEAD, RETURN EXACTLY THIS JSON:
+      { "error": "CONTENT_VIOLATION" }
+      
+      Example Success JSON:
       {
         "certificate_title": "Employee of the Month",
         "organization_name": "Company Inc",
@@ -39,7 +49,8 @@ export async function POST(req: Request) {
     const response = await genAI.models.generateContent({
       model: "gemini-2.0-flash-lite", 
       contents: [{ parts: [{ text: systemInstruction + "\n\nUser Scenario: " + prompt }] }],
-      // FIX: We cast 'config' to 'any' to stop the "HARM_CATEGORY" type error
+      // CONFIG: We keep thresholds relatively high to let the System Instruction handle the logic,
+      // but we ensure severe content is blocked by the model layer.
       config: {
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
@@ -51,14 +62,13 @@ export async function POST(req: Request) {
     });
 
     // 4. Extract Text
-    // IMPORTANT: In the new SDK, .text is a PROPERTY, not a function.
-    // We cast response to 'any' to stop TypeScript from complaining about it.
     const resultText = (response as any).text; 
     
     console.log("AI Response:", resultText);
 
     if (!resultText) {
-       throw new Error("Empty response from AI.");
+       // If Gemini's safety filter killed it completely (returned null), handle it here
+       return NextResponse.json({ error: "Content flagged as unsafe." }, { status: 400 });
     }
 
     // 5. Clean & Parse
@@ -74,14 +84,24 @@ export async function POST(req: Request) {
         }, { status: 400 });
     }
 
-    if (parsedData.error) {
-       return NextResponse.json({ error: "Policy Violation." }, { status: 400 });
+    // 6. 🛑 FINAL CHECK: Did our Guardrail trigger?
+    if (parsedData.error === "CONTENT_VIOLATION") {
+       console.warn(`[Abuse Prevented] Prompt: ${prompt}`);
+       return NextResponse.json({ 
+           error: "Your request contains inappropriate content and cannot be generated." 
+       }, { status: 400 });
     }
     
     return NextResponse.json(parsedData);
 
   } catch (error: any) {
     console.error("API Error:", error.message);
+    
+    // Check if it was a Safety Block Error from the API layer
+    if (error.message?.includes("SAFETY") || error.message?.includes("BLOCKED")) {
+        return NextResponse.json({ error: "Content violated safety policies." }, { status: 400 });
+    }
+
     return NextResponse.json({
       error: error.message || "Service unavailable."
     }, { status: 500 });
