@@ -27,7 +27,8 @@ const handleSessionFound = async () => {
     setStatus("Session secured. Redirecting...");
     
     // Use the locale from URL, or default to '' (root) if it's 'en' and you use 'as-needed' strategy
-    const localePrefix = locale && locale !== 'en' ? `/${locale}` : '';
+// This ensures we hit /en/dashboard instead of just /dashboard (which is 404)
+        const targetUrl = `/${locale}/dashboard?new_pro=true`;
     
     // Construct URL with the Grace Period flag
     const targetUrl = `${localePrefix}/dashboard?new_pro=true`;
