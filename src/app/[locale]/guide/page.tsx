@@ -24,7 +24,7 @@ export default function GuidePage() {
         <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-8 leading-relaxed">
           {t('hero_desc')}
         </p>
-        <Link href="/create" className="px-8 py-3 bg-blue-600 rounded-lg font-bold hover:bg-blue-500 transition-all text-sm shadow-lg shadow-blue-900/50">
+        <Link href="/" className="px-8 py-3 bg-blue-600 rounded-lg font-bold hover:bg-blue-500 transition-all text-sm shadow-lg shadow-blue-900/50">
           {t('hero_cta')}
         </Link>
       </section>
