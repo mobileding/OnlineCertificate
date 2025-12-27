@@ -65,7 +65,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
                         <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{t('label_email')}</label>
                         <div className="flex items-center justify-between bg-slate-50 p-2 rounded border border-slate-100">
                             <span className="font-medium text-sm text-slate-900 truncate">{user.email}</span>
-                            <ShieldCheck size={14} className="text-green-500 flex-shrink-0" title={t('badge_verified')} />
+<div title={t('badge_verified')} className="flex-shrink-0 cursor-help">
+    <ShieldCheck size={14} className="text-green-500" />
+</div>
                         </div>
                     </div>
                     <div>
@@ -183,7 +185,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
                                             {t('lock_msg')}
                                         </p>
                                     </div>
-                                    <Lock size={16} className="text-slate-300 mb-auto" title="Locked" />
+<div title="Locked" className="mb-auto cursor-help">
+    <Lock size={16} className="text-slate-300" />
+</div>
                                 </div>
                             </div>
                         </div>
