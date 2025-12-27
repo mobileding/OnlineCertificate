@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Link, useRouter } from "@/i18n/routing"; // 1. Custom Routing
-import { useLocale, useTranslations } from "next-intl"; // 2. i18n Hooks
+import { useEffect, useState, useRef } from "react"; // <--- 1. Import useRef
+import { Link, useRouter } from "@/i18n/routing"; 
+import { usePathname } from "next/navigation"; 
+import { useLocale, useTranslations } from "next-intl"; 
 import { createBrowserClient } from "@supabase/ssr";
 import { User, LogOut, LayoutDashboard, Home, Mail, Settings } from "lucide-react";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -10,28 +11,33 @@ import Image from "next/image";
 
 export function Navigation() {
   const t = useTranslations('Navigation');
-  const locale = useLocale(); // Get current language (e.g., 'en', 'es', 'zh')
+  const locale = useLocale(); 
+  const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
+  
+  // 2. Add a Ref to track manual logout
+  const isLoggingOut = useRef(false);
   
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  const isHomePage = pathname === `/${locale}` || pathname === '/';
+
   useEffect(() => {
-    // 1. Initial User Check
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
     };
     getUser();
 
-    // 2. Real-time Auth Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (_event === 'SIGNED_OUT') {
-         // Fallback: If session expires automatically, just refresh current view
+      
+      // 3. Only refresh if we are NOT manually logging out
+      if (_event === 'SIGNED_OUT' && !isLoggingOut.current) {
          router.refresh(); 
       }
     });
@@ -40,40 +46,64 @@ export function Navigation() {
   }, [supabase, router]);
 
   const handleLogout = async () => {
+    // 4. Set the flag BEFORE signing out
+    isLoggingOut.current = true;
+    
     await supabase.auth.signOut();
     setUser(null);
     
-    // 3. LOGOUT LOGIC (Locale Aware)
-    // We force a hard reload to the localized root (e.g. /es, /zh, or /en)
-    // This clears the cache but keeps the user in their chosen language.
+    // Force hard reload to clear all states/caches
     window.location.href = `/${locale}`; 
   };
-
   return (
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         
-        {/* LOGO */}
-        <Link href="/" className="flex items-center gap-2">
-          <Image 
-            src="/certlogo.png" 
-            alt="OnlineCertificate Logo" 
-            width={32} 
-            height={32} 
-            className="object-contain" 
-          />
-          <span className="text-xl font-extrabold text-slate-900 tracking-tight">
-            OnlineCertificate<span className="text-blue-600">.org</span>
-          </span>
-        </Link>
+        {/* === LOGO (WITH HARD REFRESH LOGIC) === */}
+        {isHomePage ? (
+            // OPTION A: If on Home -> Use <a> to force hard reload (Resets Generator)
+            <a href={`/${locale}`} className="flex items-center gap-2 cursor-pointer">
+                <Image 
+                    src="/certlogo.png" 
+                    alt="OnlineCertificate Logo" 
+                    width={32} 
+                    height={32} 
+                    className="object-contain" 
+                />
+                <span className="text-xl font-extrabold text-slate-900 tracking-tight">
+                    OnlineCertificate<span className="text-blue-600">.org</span>
+                </span>
+            </a>
+        ) : (
+            // OPTION B: If elsewhere -> Use <Link> for fast client-side nav
+            <Link href="/" className="flex items-center gap-2">
+                <Image 
+                    src="/certlogo.png" 
+                    alt="OnlineCertificate Logo" 
+                    width={32} 
+                    height={32} 
+                    className="object-contain" 
+                />
+                <span className="text-xl font-extrabold text-slate-900 tracking-tight">
+                    OnlineCertificate<span className="text-blue-600">.org</span>
+                </span>
+            </Link>
+        )}
 
         {/* MENU ITEMS */}
         <div className="flex items-center gap-4 sm:gap-6">
           
           {/* Public Links */}
-          <Link href="/" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5">
-            <Home size={16} /> <span className="hidden sm:inline">{t('home')}</span>
-          </Link>
+          {/* Note: I applied the same logic to the 'Home' icon link below for consistency */}
+          {isHomePage ? (
+             <a href={`/${locale}`} className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5 cursor-pointer">
+                <Home size={16} /> <span className="hidden sm:inline">{t('home')}</span>
+             </a>
+          ) : (
+             <Link href="/" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5">
+                <Home size={16} /> <span className="hidden sm:inline">{t('home')}</span>
+             </Link>
+          )}
           
           <Link href="/contact" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5">
              <Mail size={16} /> <span className="hidden sm:inline">{t('contact')}</span>

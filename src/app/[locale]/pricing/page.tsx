@@ -224,14 +224,15 @@ function PricingContent() {
           </Link>
         </div>
 
-        {/* === TIER 2: PROFESSIONAL (Pro) === */}
+{/* === TIER 2: PROFESSIONAL (Pro) === */}
         <div className="bg-white p-0 rounded-lg border-2 border-blue-600 shadow-md relative flex flex-col h-full transform md:-translate-y-2">
-           
-           <div className="bg-blue-600 text-white text-xs font-bold text-center py-1 uppercase tracking-wider">
-             {t('tier_pro.badge')}
-           </div>
+            
+            {/* 1. TRIAL BANNER (Translated) */}
+            <div className="bg-amber-400 text-slate-900 text-xs font-bold text-center py-1 uppercase tracking-wider flex justify-center items-center gap-2">
+               <Zap size={12} fill="currentColor" /> {t('tier_pro.trial_badge')}
+            </div>
 
-           <div className="p-8 flex flex-col h-full">
+            <div className="p-8 flex flex-col h-full">
               <div className="mb-6 border-b border-slate-100 pb-6">
                 <h3 className="text-xl font-serif font-bold text-blue-900 flex items-center gap-2 mb-2">
                     {t('tier_pro.name')}
@@ -240,7 +241,12 @@ function PricingContent() {
                     <p className="text-4xl font-bold text-slate-900">{t('tier_pro.price')}</p>
                     <span className="text-slate-500 font-normal">{t('tier_pro.period')}</span>
                 </div>
-                <p className="text-sm text-slate-500 mt-2">{t('tier_pro.desc')}</p>
+                
+                {/* 2. CHARGE EXPLANATION (Translated) */}
+                <p className="text-sm font-bold text-emerald-600 mt-2">
+                    {t('tier_pro.trial_text')}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">{t('tier_pro.trial_sub')}</p>
               </div>
 
               <div className="flex-grow">
@@ -271,7 +277,8 @@ function PricingContent() {
               >
                 {loading === 'pro' ? <Loader2 className="animate-spin" /> : 
                    userTier === 'pro' ? t('tier_pro.cta_current') : 
-                   userTier === 'elite' ? t('tier_pro.cta_included') : t('tier_pro.cta_select')
+                   userTier === 'elite' ? t('tier_pro.cta_included') : 
+                   t('tier_pro.cta_trial') // <--- Uses translated string "Start Free Trial"
                 }
               </button>
            </div>

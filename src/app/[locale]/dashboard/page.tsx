@@ -1,9 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-// 1. CHANGE: Use the i18n Link so buttons keep the language
 import { Link } from "@/i18n/routing"; 
-import { Award } from "lucide-react";
+import { Award, Rocket, BookOpen, ArrowRight } from "lucide-react"; // Added Icons
 import { DashboardTable } from '@/components/DashboardTable'; 
 import { getTranslations } from 'next-intl/server'; 
 
@@ -28,17 +27,13 @@ export default async function DashboardPage({ params, searchParams }: PageProps)
     }
   );
 
-const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/${locale}/login`);
+  const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
-    // FIX: Redirect to the localized login page
     redirect(`/${locale}/login`);
   }
 
-
-
-  // 2. === THE GATEKEEPER (FINAL FIX) ===
+  // === THE GATEKEEPER ===
   const { data: profile } = await supabase
     .from('profiles')
     .select('subscription_tier, created_at')
@@ -47,24 +42,17 @@ const { data: { user } } = await supabase.auth.getUser();
 
   const isPaid = profile?.subscription_tier === 'pro' || profile?.subscription_tier === 'elite';
 
-  // --- THE VIP PASS ---
-  // Calculate if the user is "Brand New" (created in the last 10 minutes)
+  // Check if "Brand New" (created in last 10 mins) to allow graceful payment catch-up
   const createdAt = new Date(user.created_at).getTime();
   const now = new Date().getTime();
-  const isBrandNew = (now - createdAt) < 10 * 60 * 1000; // 10 Minutes
+  const isBrandNew = (now - createdAt) < 10 * 60 * 1000; 
 
-  // LOGIC: 
-  // 1. If they are Paid -> Allow.
-  // 2. If they are Brand New -> Allow (Assume payment succeeded, DB is just slow).
-  // 3. Otherwise -> Kick out.
   if (!isPaid && !isBrandNew) {
-      console.log(`[Dashboard] Blocking User ${user.email}. Tier: ${profile?.subscription_tier}, New: ${isBrandNew}`);
+      console.log(`[Dashboard] Blocking User ${user.email}. Tier: ${profile?.subscription_tier}`);
       redirect(`/${locale}/pricing?error=upgrade_required`);
   }
-  // ===========
-  // ==========================
 
-  // 3. Fetch Certificates
+  // Fetch Certificates
   const { data: certificates } = await supabase
     .from('certificates')
     .select('*')
@@ -81,23 +69,49 @@ const { data: { user } } = await supabase.auth.getUser();
             <h1 className="text-3xl font-bold text-slate-900">{t('title')}</h1>
             <p className="text-slate-500 mt-1">{t('subtitle')}</p>
           </div>
-          <Link href="/" className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-black transition flex items-center justify-center gap-2 shadow-sm">
-            <Award size={18} /> {t('btn_issue')}
-          </Link>
+          {/* Only show top button if they actually have data, otherwise the big button below is enough */}
+          {certificates && certificates.length > 0 && (
+            <Link href="/" className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-black transition flex items-center justify-center gap-2 shadow-sm">
+                <Award size={18} /> {t('btn_issue')}
+            </Link>
+          )}
         </div>
 
-        {/* The Table */}
+        {/* Content Area */}
         {certificates && certificates.length > 0 ? (
           <DashboardTable certificates={certificates} />
         ) : (
-          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
-            <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Award className="text-slate-400 w-8 h-8" />
+          /* === NEW WELCOME STATE === */
+          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300 shadow-sm flex flex-col items-center">
+            
+            <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mb-6 ring-8 ring-blue-50/50">
+              <Rocket className="text-blue-600 w-10 h-10 ml-1" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">{t('empty_title')}</h3>
-            <p className="text-slate-500 max-w-sm mx-auto mt-2">
-              {t('empty_desc')}
+            
+            <h3 className="text-2xl font-bold text-slate-900 mb-3">{t('welcome_title')}</h3>
+            
+            <p className="text-slate-500 max-w-md mx-auto mb-8 text-lg leading-relaxed">
+              {t('welcome_desc')}
             </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+                {/* Primary CTA: Create Certificate */}
+                <Link 
+                    href="/" 
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 transition-all flex items-center gap-2"
+                >
+                    {t('btn_create_first')} <ArrowRight size={18} />
+                </Link>
+
+                {/* Secondary CTA: Read Guide */}
+                <Link 
+                    href="/guide" 
+                    className="text-slate-600 hover:text-slate-900 px-6 py-3 font-medium flex items-center gap-2 hover:bg-slate-50 rounded-xl transition-colors"
+                >
+                    <BookOpen size={18} /> {t('link_guide')}
+                </Link>
+            </div>
+
           </div>
         )}
 

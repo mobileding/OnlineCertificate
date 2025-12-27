@@ -1,65 +1,64 @@
 "use client";
 
-import { useState, useEffect } from "react"; // Added useEffect
-import { Check, User, ShieldCheck, ShieldAlert, Loader2, Trash2, Save } from "lucide-react";
-import { updateVerification, deleteUser } from "../app/admin/actions";
-import { useRouter } from "next/navigation"; // Added router
+import { useState } from "react";
+import { 
+  User, ShieldCheck, ShieldAlert, Loader2, Trash2, Save, 
+  Globe, Linkedin, MapPin, Check, AlertCircle 
+} from "lucide-react";
+// FIX: Ensure this path matches your file structure (e.g., @/app/[locale]/admin/actions)
+import { updateProfileField, deleteUser } from "@/app/[locale]/admin/actions"; 
+import { useRouter } from "next/navigation";
 
 export function AdminUserRow({ profile }: { profile: any }) {
   const router = useRouter();
   
-  // Local state for input
+  // Local state for Name Input
   const [orgName, setOrgName] = useState(profile.organization_name || "");
-  
-  // Loading states
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isSavingName, setIsSavingName] = useState(false);
-
-  // Sync state if parent profile changes (fix for UI not refreshing after save)
-  useEffect(() => {
-    setOrgName(profile.organization_name || "");
-  }, [profile.organization_name]);
+  const [loadingField, setLoadingField] = useState<string | null>(null);
 
   const certCount = profile.certificates?.[0]?.count || 0;
 
-  // 1. TOGGLE VERIFICATION
-  const handleToggle = async () => {
-    if (!profile.is_org_verified && !orgName.trim()) {
-      alert("Please enter an Organization Name before verifying.");
-      return;
-    }
-    setIsVerifying(true);
-    await updateVerification(profile.id, !profile.is_org_verified, orgName);
-    setIsVerifying(false);
-    // Router refresh ensures the server data replaces our local state
+  // Helper to verify a specific field
+  const toggleVerify = async (field: string, currentValue: boolean) => {
+    setLoadingField(field);
+    // If we are verifying the NAME, we also save the text value
+    const updates = field === 'is_org_verified' 
+      ? { [field]: !currentValue, organization_name: orgName }
+      : { [field]: !currentValue };
+      
+    await updateProfileField(profile.id, updates);
+    setLoadingField(null);
     router.refresh(); 
   };
 
-  // 2. SAVE NAME ONLY
-  const handleSaveName = async () => {
-    setIsSavingName(true);
-    try {
-        await updateVerification(profile.id, profile.is_org_verified, orgName);
-        router.refresh(); // Refresh to confirm save
-    } catch (e) {
-        alert("Failed to save. Check console.");
-    } finally {
-        setIsSavingName(false);
-    }
-  };
-
-  // 3. DELETE USER
   const handleDelete = async () => {
-    if (!confirm("Are you sure? This will permanently delete this user.")) return;
-    setIsDeleting(true);
+    if (!confirm("Permanently delete this user?")) return;
+    setLoadingField('delete');
     await deleteUser(profile.id);
   };
 
-  const hasNameChanged = orgName !== (profile.organization_name || "");
+  // Reusable Mini-Shield Button
+  const VerifyToggle = ({ field, isVerified }: { field: string, isVerified: boolean }) => (
+    <button
+      onClick={() => toggleVerify(field, isVerified)}
+      disabled={!!loadingField}
+      className={`p-1 rounded-md transition-all ${
+        isVerified 
+          ? "text-blue-600 bg-blue-50 hover:bg-blue-100" 
+          : "text-slate-300 hover:text-emerald-600 hover:bg-emerald-50"
+      }`}
+      title={isVerified ? "Revoke Verification" : "Verify this item"}
+    >
+      {loadingField === field ? (
+        <Loader2 size={14} className="animate-spin" />
+      ) : (
+        isVerified ? <ShieldCheck size={14} /> : <ShieldAlert size={14} />
+      )}
+    </button>
+  );
 
   return (
-    <tr className="hover:bg-slate-50 transition-colors border-b border-slate-50 group">
+    <tr className="hover:bg-slate-50 transition-colors border-b border-slate-50 group text-sm">
       
       {/* 1. User Info */}
       <td className="px-6 py-4">
@@ -74,7 +73,7 @@ export function AdminUserRow({ profile }: { profile: any }) {
         </div>
       </td>
 
-      {/* 2. Count */}
+      {/* 2. Certificate Count (RESTORED) */}
       <td className="px-6 py-4 text-center">
         {certCount > 0 ? (
           <span className="bg-slate-100 text-slate-700 font-bold px-2.5 py-1 rounded-full text-xs">
@@ -85,74 +84,81 @@ export function AdminUserRow({ profile }: { profile: any }) {
         )}
       </td>
 
-      {/* 3. Editable Name */}
+      {/* 3. Org Name (Verification #1) */}
       <td className="px-6 py-4">
         <div className="flex items-center gap-2">
-            <input 
+           <VerifyToggle field="is_org_verified" isVerified={profile.is_org_verified} />
+           <input 
               type="text" 
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
               placeholder="Enter Org Name..."
-              className="w-full px-3 py-2 border border-slate-200 rounded text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-transparent hover:bg-white focus:bg-white transition-colors"
-            />
-            {hasNameChanged && (
-                <button 
-                    onClick={handleSaveName}
-                    disabled={isSavingName}
-                    className="p-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
-                    title="Save Name Change"
-                >
-                    {isSavingName ? <Loader2 size={14} className="animate-spin"/> : <Save size={14} />}
-                </button>
-            )}
+              className={`w-40 px-2 py-1 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                  profile.is_org_verified ? "border-blue-200 bg-blue-50/30 font-bold text-slate-700" : "border-slate-200 bg-transparent"
+              }`}
+           />
+           {/* Show Save icon if text changed but not saved yet */}
+           {orgName !== (profile.organization_name || "") && (
+              <button onClick={() => toggleVerify('is_org_verified', !profile.is_org_verified)} className="text-amber-500 hover:text-amber-600">
+                <Save size={14}/>
+              </button>
+           )}
         </div>
       </td>
 
-      {/* 4. Identity Status (Clarified) */}
+      {/* 4. Digital Evidence (Verification #2, #3, #4) */}
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-4">
+            
+            {/* Website */}
+            <div className={`flex items-center gap-1 p-1 rounded border ${profile.is_website_verified ? 'border-indigo-200 bg-indigo-50' : 'border-transparent'}`}>
+                <VerifyToggle field="is_website_verified" isVerified={profile.is_website_verified} />
+                {profile.website_url ? (
+                    <a href={profile.website_url} target="_blank" className="text-indigo-600 hover:underline"><Globe size={14} /></a>
+                ) : <Globe size={14} className="text-slate-200" />}
+            </div>
+
+            {/* LinkedIn */}
+            <div className={`flex items-center gap-1 p-1 rounded border ${profile.is_linkedin_verified ? 'border-blue-200 bg-blue-50' : 'border-transparent'}`}>
+                <VerifyToggle field="is_linkedin_verified" isVerified={profile.is_linkedin_verified} />
+                {profile.linkedin_url ? (
+                    <a href={profile.linkedin_url} target="_blank" className="text-blue-600 hover:underline"><Linkedin size={14} /></a>
+                ) : <Linkedin size={14} className="text-slate-200" />}
+            </div>
+
+            {/* Google */}
+            <div className={`flex items-center gap-1 p-1 rounded border ${profile.is_google_verified ? 'border-emerald-200 bg-emerald-50' : 'border-transparent'}`}>
+                <VerifyToggle field="is_google_verified" isVerified={profile.is_google_verified} />
+                {profile.google_business_url ? (
+                    <a href={profile.google_business_url} target="_blank" className="text-emerald-600 hover:underline"><MapPin size={14} /></a>
+                ) : <MapPin size={14} className="text-slate-200" />}
+            </div>
+
+        </div>
+      </td>
+
+      {/* 5. Identity Status (RESTORED) */}
       <td className="px-6 py-4">
         {profile.is_email_verified ? (
           <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-            <Check size={14} className="text-green-500" /> Email Confirmed
+            <Check size={14} className="text-green-500" /> Confirmed
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400" title="User has not clicked the email confirmation link yet">
-             <div className="w-3 h-3 rounded-full bg-amber-400"></div> Email Pending
+          <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
+             <AlertCircle size={14} className="text-amber-400" /> Pending
           </div>
         )}
       </td>
 
-      {/* 5. Actions */}
+      {/* 6. Delete Action */}
       <td className="px-6 py-4 text-right">
-        <div className="flex items-center justify-end gap-3">
-            <button
-            onClick={handleToggle}
-            disabled={isVerifying}
-            className={`
-                relative inline-flex items-center gap-1.5 pl-3 pr-4 py-1.5 rounded-full text-xs font-bold transition-all border
-                ${profile.is_org_verified 
-                ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200" 
-                : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-green-50 hover:text-green-700 hover:border-green-200"
-                }
-            `}
-            >
-            {isVerifying ? (
-                <Loader2 size={14} className="animate-spin" />
-            ) : (
-                <>
-                {profile.is_org_verified ? <ShieldCheck size={14} /> : <ShieldAlert size={14} />}
-                <span>{profile.is_org_verified ? "Verified" : "Verify"}</span>
-                </>
-            )}
-            </button>
-
-            <button 
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="text-slate-300 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition-colors"
-            >
-                {isDeleting ? <Loader2 size={16} className="animate-spin text-red-600"/> : <Trash2 size={16} />}
-            </button>
-        </div>
+        <button 
+            onClick={handleDelete}
+            disabled={!!loadingField}
+            className="text-slate-300 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition-colors"
+        >
+            {loadingField === 'delete' ? <Loader2 size={16} className="animate-spin text-red-600"/> : <Trash2 size={16} />}
+        </button>
       </td>
 
     </tr>

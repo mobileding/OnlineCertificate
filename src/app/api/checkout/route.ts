@@ -1,4 +1,4 @@
-import { stripe } from "@/lib/stripe"; // Updated to use alias '@'
+import { stripe } from "@/lib/stripe"; 
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
@@ -41,6 +41,8 @@ export async function POST(req: Request) {
             .eq('id', user.id)
             .single();
 
+        // Note: Upgrades usually happen instantly without a trial, 
+        // effectively ending the current period and starting the new one.
         if (profile?.subscription_tier === 'pro' && plan === 'elite' && profile.subscription_id) {
             
             console.log(`[Upgrade] Upgrading user ${user.id} to Elite`);
@@ -78,13 +80,7 @@ export async function POST(req: Request) {
         ? (process.env.NEXT_PUBLIC_SITE_URL || 'https://onlinecertificate.org') // Fallback safety
         : 'http://localhost:3000';
 
-// --- CHANGE THIS SECTION ---
-    
-    // OLD CODE (Was causing 404 because it left 'en' empty):
-    // const localePath = locale && locale !== 'en' ? `/${locale}` : '';
-
     // NEW FIX: Always force the locale prefix (e.g. '/en')
-    // This ensures we hit the [locale] folder every time.
     const localePath = `/${locale || 'en'}`;
 
 
@@ -92,6 +88,13 @@ export async function POST(req: Request) {
       payment_method_types: ["card"],
       line_items: [{ price: targetPriceId, quantity: 1 }], 
       mode: "subscription",
+      
+      // === ADDED: 60-DAY FREE TRIAL LOGIC ===
+      subscription_data: {
+        trial_period_days: 60,
+      },
+      // ======================================
+
       // USE THE 'domain' VARIABLE HERE
       success_url: `${domain}${localePath}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${domain}${localePath}/pricing?canceled=true`,

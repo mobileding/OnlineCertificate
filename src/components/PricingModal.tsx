@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, X, Zap, Crown, ArrowRight, Loader2, LayoutDashboard, BadgeCheck, UploadCloud, QrCode, Image as ImageIcon } from "lucide-react";
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -12,6 +12,7 @@ interface PricingModalProps {
 
 export function PricingModal({ isOpen, onClose, reason }: PricingModalProps) {
   const t = useTranslations('PricingModal');
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -22,7 +23,10 @@ export function PricingModal({ isOpen, onClose, reason }: PricingModalProps) {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ 
+            plan: 'pro',
+            locale: locale 
+        }),
       });
 
       const data = await res.json();
@@ -95,13 +99,21 @@ export function PricingModal({ isOpen, onClose, reason }: PricingModalProps) {
 
           {/* PRO PLAN ($6) */}
           <div className="border-2 border-blue-600 rounded-xl p-6 shadow-xl relative overflow-hidden bg-white">
-            <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
-                {t('pro_badge')}
+            
+            {/* TRIAL BADGE (Using Translation) */}
+            <div className="absolute top-0 right-0 bg-amber-400 text-slate-900 text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
+               {t('trial_badge')}
             </div>
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mt-4">
                 <Crown className="w-5 h-5 text-blue-600" /> {t('pro_title')}
             </h3>
-            <p className="text-3xl font-bold text-slate-900 mt-4">{t('pro_price')} <span className="text-sm font-normal text-slate-500">{t('pro_period')}</span></p>
+            
+            {/* PRICE + TRIAL TEXT (Using Translation) */}
+            <div className="mt-4">
+                <p className="text-3xl font-bold text-slate-900">{t('pro_price')} <span className="text-sm font-normal text-slate-500">{t('pro_period')}</span></p>
+                <p className="text-xs font-bold text-emerald-600 mt-1">{t('trial_text')}</p>
+            </div>
             
             <ul className="mt-6 space-y-3">
                 <li className="flex items-center gap-2 text-sm text-slate-900 font-medium">
@@ -121,7 +133,6 @@ export function PricingModal({ isOpen, onClose, reason }: PricingModalProps) {
                 </li>
             </ul>
             
-            {/* DIRECT TO STRIPE BUTTON */}
             <button 
                 onClick={handleUpgrade}
                 disabled={loading}

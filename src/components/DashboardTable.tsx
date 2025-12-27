@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+//import Link from "next/link";
+import { Link } from "@/i18n/routing"; 
 // 1. Added 'Mail' to imports
 import { Search, Copy, Check, ExternalLink, ChevronLeft, ChevronRight, Mail } from "lucide-react";
 

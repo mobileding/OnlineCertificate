@@ -1,0 +1,393 @@
+    "preset_corp_label": "Star Employee",
+    "preset_corp_prompt": "Employee of the Month award for Sarah Jenkins for her positive attitude and record-breaking sales in July.",    
+    "preset_course_label": "Workshop Class",
+    "preset_course_prompt": "Certificate of Completion for Mike Ross for finishing the 3-day 'Digital Photography Basics' workshop.",    
+    "preset_civic_label": "Community Event",
+    "preset_civic_prompt": "Appreciation award for the 'Green Park Cleanup Team' for their hard work and help this weekend.",
+
+
+
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { User, Building2, CreditCard, ShieldCheck, Lock, ExternalLink } from "lucide-react"; 
+import { PasswordUpdateForm } from './PasswordUpdateForm'; 
+import { getTranslations } from 'next-intl/server'; 
+import { OrgProfileForm } from '@/components/OrgProfileForm'; 
+import { LogoUpload } from "@/components/LogoUpload"; // <--- Ensure this is imported
+
+export default async function ProfilePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'Profile' });
+
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  );
+
+  // Check Authentication
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  // Fetch Profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  // THE GATEKEEPER
+  const isPaid = profile?.subscription_tier === 'pro' || profile?.subscription_tier === 'elite';
+  if (!isPaid) redirect("/pricing?error=upgrade_required");
+
+  // Construct Mailto Link for Verification
+  const verificationSubject = encodeURIComponent(`Verification Request: ${profile?.organization_name || user.email}`);
+  const verificationBody = encodeURIComponent(
+    `Hello Support,\n\nI would like to verify my organization: "${profile?.organization_name || "My Organization"}".\n\nMy User ID is: ${user.id}\n\nPlease let me know what documents you need (e.g., Business License, Website link).\n\nThanks!`
+  );
+  const mailtoLink = `mailto:support@onlinecertificate.org?subject=${verificationSubject}&body=${verificationBody}`;
+
+  return (
+    <main className="min-h-screen bg-slate-50 p-6 lg:p-10 font-sans">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Header */}
+        <div className="mb-8 border-b border-slate-200 pb-6">
+          <h1 className="text-3xl font-bold text-slate-900">{t('title')}</h1>
+          <p className="text-slate-500 mt-1">{t('subtitle')}</p>
+        </div>
+
+        <div className="grid lg:grid-cols-12 gap-8 items-start">
+          
+          {/* === LEFT SIDEBAR: User & Account Settings === */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* 1. Identity Card */}
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-4 text-xs uppercase tracking-wider">
+                    <User size={14} className="text-slate-400"/> {t('sec_identity')}
+                </h2>
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{t('label_email')}</label>
+                        <div className="flex items-center justify-between bg-slate-50 p-2 rounded border border-slate-100">
+                            <span className="font-medium text-sm text-slate-900 truncate">{user.email}</span>
+                            <ShieldCheck size={14} className="text-green-500 flex-shrink-0" title={t('badge_verified')} />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{t('label_uid')}</label>
+                        <code className="block text-[10px] text-slate-400 font-mono break-all leading-tight">
+                            {user.id}
+                        </code>
+                    </div>
+                </div>
+            </div>
+
+            {/* 2. Subscription Card */}
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="font-bold text-slate-800 flex items-center gap-2 text-xs uppercase tracking-wider">
+                        <CreditCard size={14} className="text-slate-400"/> {t('sec_plan')}
+                    </h2>
+                    <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                        {t('status_active')}
+                    </span>
+                </div>
+
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 mb-4 text-center">
+                    <span className="block font-bold text-slate-900 capitalize text-lg mb-1">{profile.subscription_tier}</span>
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wide">
+                        {profile.subscription_tier === 'elite' ? "Institutional Tier" : "Standard Tier"}
+                    </span>
+                </div>
+
+                <a href="/api/stripe/portal" className="block w-full text-center bg-white border border-slate-300 text-slate-600 py-2 rounded-lg text-xs font-bold hover:bg-slate-50 hover:text-slate-900 transition-colors flex items-center justify-center gap-2">
+                    {t('btn_manage')} <ExternalLink size={12} />
+                </a>
+            </div>
+
+            {/* 3. Security Card */}
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-4 text-xs uppercase tracking-wider">
+                    <Lock size={14} className="text-slate-400"/> Security
+                </h2>
+                <PasswordUpdateForm />
+            </div>
+          </div>
+
+
+          {/* === RIGHT MAIN: Organization Workspace === */}
+          <div className="lg:col-span-8">
+             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                
+                {/* Header Section */}
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 className="font-bold text-slate-900 flex items-center gap-2 text-lg">
+                            <Building2 size={20} className="text-indigo-600"/> {t('sec_org')}
+                        </h2>
+                        <p className="text-sm text-slate-500 mt-1">{t('header_desc')}</p>
+                    </div>
+
+                    {/* Verification Status Badge */}
+                    {profile?.is_org_verified ? (
+                        <div className="flex items-center gap-2 text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100 shadow-sm">
+                            <ShieldCheck size={16} />
+                            <span className="text-sm font-bold">{t('badge_biz_verified')}</span>
+                        </div>
+                    ) : (
+                        <a href={mailtoLink} className="flex items-center gap-2 text-xs font-bold bg-slate-900 text-white px-4 py-2.5 rounded-lg hover:bg-black transition-colors shadow-md">
+                            <ShieldCheck size={14} /> {t('btn_verify_req')}
+                        </a>
+                    )}
+                </div>
+
+                {/* Content Section */}
+                <div className="p-6 sm:p-8">
+                    
+                    {/* Unverified Warning Banner */}
+                    {!profile?.is_org_verified && (
+                        <div className="mb-8 bg-amber-50 border border-amber-100 rounded-lg p-4 flex gap-3 items-start animate-in fade-in slide-in-from-top-2">
+                            <div className="bg-amber-100 p-1.5 rounded-full text-amber-600 flex-shrink-0 mt-0.5">
+                                <ShieldCheck size={16} />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-amber-900">{t('status_unverified')}</h4>
+                                <p className="text-xs text-amber-700 mt-1 leading-relaxed max-w-md">
+                                    {t('warning_unverified')}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-8">
+                        
+                        {/* === COMBINED SECTION: LOGO + NAME === */}
+                        <div className="flex flex-col sm:flex-row gap-6 items-start">
+                            
+                            {/* 1. Logo Uploader (Left) */}
+                            <div className="flex-shrink-0">
+                                <label className="text-xs font-bold text-slate-500 uppercase block mb-2 tracking-wide">
+                                    {t('label_logo')}
+                                </label>
+                                <LogoUpload userId={user.id} currentLogoUrl={profile?.logo_url} />
+                            </div>
+
+                            {/* 2. Org Name (Right - Fills remaining space) */}
+                            <div className="flex-grow w-full">
+                                <label className="text-xs font-bold text-slate-500 uppercase block mb-2 tracking-wide">
+                                    {t('label_org_name')}
+                                </label>
+                                
+                                {/* h-[6.5rem] ensures it aligns perfectly with the logo height */}
+                                <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl h-[6.5rem]"> 
+                                    <div className="flex flex-col justify-center">
+                                        <span className="font-bold text-slate-900 text-lg">
+                                            {profile?.organization_name || t('val_not_set')}
+                                        </span>
+                                        <p className="text-[10px] text-slate-400 mt-1 max-w-xs leading-tight">
+                                            {t('lock_msg')}
+                                        </p>
+                                    </div>
+                                    <Lock size={16} className="text-slate-300 mb-auto" title="Locked" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr className="border-slate-100" />
+
+                        {/* === DIGITAL PRESENCE FORM === */}
+                        <div>
+                            <div className="mb-4">
+                                <h3 className="text-sm font-bold text-slate-900">{t('digital_title')}</h3>
+                                <p className="text-xs text-slate-500">{t('digital_desc')}</p>
+                            </div>
+                            <OrgProfileForm profile={profile} />
+                        </div>
+                    </div>
+
+                </div>
+             </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{
+  "Hero": {
+    "title": "Domina la plataforma",
+    "subtitle": "Crea certificados verificables en segundos."
+  },
+  "Pricing": {
+    "success_banner": "Suscripción activa. Los privilegios de tu cuenta han sido actualizados.",
+    "success_link": "Volver al panel",
+    "title": "Sostenibilidad operativa",
+    "subtitle": "OnlineCertificate.org está comprometido con el acceso abierto. La verificación básica es gratuita para siempre.",
+    "tier_guest": {
+      "name": "Acceso público",
+      "price": "$0",
+      "desc": "Abierto para todos. No se requiere cuenta.",
+      "feat_1": "Generación de un solo certificado",
+      "feat_2": "Descarga estándar en PDF",
+      "feat_3": "Panel e historial",
+      "feat_4": "Carga de logotipo personalizado",
+      "cta": "Acceder al generador"
+    },
+    "tier_pro": {
+      "badge": "Estándar",
+      "name": "Profesional",
+      "price": "$6",
+      "period": "/mes",
+      "desc": "Para branding y gestión de registros.",
+      "feat_1": "Panel e historial",
+      "feat_2": "Carga de logotipo personalizado",
+      "feat_3": "Sello de emisor verificado",
+      "cta_current": "Plan actual",
+      "cta_included": "Incluido en Institucional",
+      "cta_select": "Seleccionar Profesional"
+    },
+    "tier_elite": {
+      "lock_title": "Requisito previo necesario",
+      "lock_desc": "El acceso institucional requiere una cuenta Profesional activa.",
+      "lock_btn": "Activar Profesional primero",
+      "name": "Institucional",
+      "price": "$22",
+      "period": "/mes",
+      "desc": "Para universidades y empresas de alto volumen.",
+      "feat_1": "Todo lo incluido en Profesional",
+      "feat_2": "Distribución directa por correo electrónico",
+      "feat_3": "CSV masivo ilimitado",
+      "feat_4": "Verificación manual",
+      "cta_current": "Plan actual",
+      "cta_upgrade": "Actualizar a Institucional",
+      "cta_locked": "Bloqueado"
+    }
+  },
+  "Contact": {
+    "hero_title": "Contáctanos",
+    "hero_desc": "¿Tienes preguntas sobre tus certificados? Nuestro equipo de soporte está disponible para ayudarte con verificaciones y consultas de cuenta.",
+    "email_title": "Soporte por correo",
+    "email_desc": "Para consultas generales, problemas de cuenta u oportunidades de asociación institucional.",
+    "btn_reveal": "Mostrar dirección de correo",
+    "chat_title": "Chat en vivo",
+    "chat_desc": "Asistencia en tiempo real para problemas de verificación. Disponible de lunes a viernes, 9 a. m. – 5 p. m. EST.",
+    "badge_coming_soon": "Próximamente",
+    "faq_title": "Preguntas frecuentes",
+    "faq_1_q": "¿Los certificados son gratuitos?",
+    "faq_1_a": "Sí. Puedes generar y descargar certificados PDF ilimitados de forma gratuita. Las funciones de verificación requieren una cuenta gratuita.",
+    "faq_2_q": "¿Cuánto duran los enlaces de verificación?",
+    "faq_2_a": "Los enlaces de verificación son permanentes mientras la cuenta emisora permanezca activa y cumpla con nuestros términos de servicio.",
+    "faq_3_q": "¿Cómo obtengo una insignia de Empresa Verificada?",
+    "faq_3_a": "Verificamos automáticamente las cuentas que se registran con un dominio institucional personalizado (por ejemplo, registrar@universidad.edu). Las cuentas de Gmail/Yahoo requieren revisión manual."
+  },
+  "Verify": {
+    "hero_badge": "Validación oficial",
+    "hero_title": "Verificar un certificado",
+    "hero_desc": "Ingresa el código de verificación de 12 dígitos que aparece en el documento para validar su autenticidad contra el registro público.",
+    "error_empty": "Por favor, ingresa un código de certificado.",
+    "error_length": "El código debe tener 12 caracteres.",
+    "btn_loading": "Verificando...",
+    "btn_verify": "Verificar código",
+    "exp_title": "¿Qué significa \"Verificado\"?",
+    "integrity_title": "Integridad a prueba de manipulaciones",
+    "integrity_desc": "A diferencia de un PDF editado en Photoshop, un registro verificado se obtiene directamente de nuestra base de datos segura. Los detalles que ves son exactamente los que se emitieron.",
+    "identity_title": "Verificación de identidad del emisor",
+    "identity_desc": "La verificación valida <italic>quién</italic> emitió el reconocimiento. Confirmamos que la organización existe, evitando estafas de \"títulos falsos\".",
+    "diag_issuer": "Emisor",
+    "diag_ledger": "Registro seguro en la nube",
+    "diag_ledger_sub": "(Registro inmutable)",
+    "diag_verifier": "Verificador (tú)",
+    "diag_caption": "El código obtiene instantáneamente el registro original, sin alteraciones.",
+    "feat_perm_title": "Almacenamiento permanente",
+    "feat_perm_desc": "El papel se pierde. Los registros digitales se almacenan permanentemente en la nube, accesibles 24/7.",
+    "feat_inst_title": "Validación instantánea",
+    "feat_inst_desc": "La verificación ocurre en milisegundos, acelerando los procesos de verificación.",
+    "feat_org_badge": "Institucional",
+    "feat_org_title": "Organización verificada",
+    "feat_org_desc": "Los emisores que actualizan obtienen una insignia de \"Organización verificada\" para máxima credibilidad.",
+    "link_plans": "Ver planes de recuperación de costos"
+  },
+  "VerifyResult": {
+    "label_org": "Nombre de la organización",
+    "badge_verified": "Copia verificada",
+    "label_award_to": "Otorgado a",
+    "label_code": "Código de verificación",
+    "label_date": "Fecha de emisión",
+    "label_remarks": "Observaciones oficiales",
+    "label_signature": "Firma autorizada",
+    "default_signature": "Firma autorizada",
+    "label_authtoken": "AUTHTOKEN",
+    "trust_title": "Verificación del emisor",
+    "trust_desc": "Fuente de esta credencial",
+    "trust_identity": "Identidad",
+    "trust_unverified_user": "Usuario no verificado",
+    "trust_org": "Organización",
+    "trust_unverified_org": "Organización no verificada",
+    "link_generate": "Generar boleta de calificaciones"
+  },
+  "Navigation": {
+    "home": "Inicio",
+    "contact": "Contacto",
+    "dashboard": "Panel",
+    "profile": "Perfil",
+    "logout": "Cerrar sesión",
+    "signin": "Iniciar sesión"
+  },
+  "Footer": {
+    "rights": "Todos los derechos reservados.",
+    "link_home": "Inicio",
+    "link_dash": "Panel",
+    "link_contact": "Contacto",
+    "link_profile": "Perfil"
+  },
+  "Login": {
+    "title": "Bienvenido de nuevo",
+    "subtitle_pwd": "Inicia sesión con tu contraseña",
+    "subtitle_magic": "Inicia sesión mediante enlace mágico",
+    "success_title": "Revisa tu bandeja de entrada",
+    "success_desc": "Enviamos un enlace de inicio de sesión a <br/> <b>{email}</b>",
+    "btn_back": "Usar un correo diferente",
+    "label_email": "Correo electrónico",
+    "label_password": "Contraseña",
+    "btn_signin_pwd": "Iniciar sesión con contraseña",
+    "btn_signin_magic": "Enviar enlace mágico",
+    "toggle_magic": "Quiero usar un enlace mágico",
+    "toggle_pwd": "Tengo una contraseña, quiero usarla",
+    "err_email_required": "Por favor, ingresa tu correo electrónico",
+    "msg_magic_sent": "¡Enlace mágico enviado! Revisa tu correo."
+  }
+}

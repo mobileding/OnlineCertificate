@@ -18,10 +18,10 @@
       "feat_4": "Custom Logo Upload",
       "cta": "Access Generator"
     },
-    "tier_pro": {
+"tier_pro": {
       "badge": "Standard",
       "name": "Professional",
-      "price": "$6",
+      "price": "$5",
       "period": "/month",
       "desc": "For branding and record keeping.",
       "feat_1": "Dashboard & History",
@@ -29,7 +29,11 @@
       "feat_3": "Verified Issuer Seal",
       "cta_current": "Current Plan",
       "cta_included": "Included in Institutional",
-      "cta_select": "Select Professional"
+      "cta_select": "Select Professional",
+      "trial_badge": "60-Day Free Trial",
+      "trial_text": "$0.00 today. Cancel anytime.",
+      "trial_sub": "First charge in 2 months",
+      "cta_trial": "Start Free Trial"
     },
     "tier_elite": {
       "lock_title": "Prerequisite Required",
@@ -46,7 +50,7 @@
       "cta_current": "Current Plan",
       "cta_upgrade": "Upgrade to Institutional",
       "cta_locked": "Locked"
-    }
+    
   },
 "modal_upgrade": {
       "title": "Confirm Upgrade",
@@ -59,7 +63,8 @@
       "alert_success": "Upgrade Successful! You are now Elite.",
       "alert_error": "Something went wrong. Please try again.",
       "alert_connection": "Connection error. Please try again."
-    },
+}   
+ },
   "Contact": {
     "hero_title": "Get in Touch",
     "hero_desc": "Have questions about your certificates? Our support team is available to assist with verification and account inquiries.",
@@ -222,12 +227,12 @@
     "placeholder": "e.g. A certificate for John Doe for winning the 2025 Science Fair...",
     "label_switch": "Switch Preset:",
     "label_try": "Try a preset:",
-    "preset_corp_label": "Employee of Month",
-    "preset_corp_prompt": "A professional Employee of the Month certificate for Sarah Jenkins, awarded by TechCorp Inc. for outstanding dedication.",
-    "preset_course_label": "Course Completion",
-    "preset_course_prompt": "A formal Certificate of Completion awarded to Michael Chang for mastering Advanced Python. Issued by Code Academy. Date: Today.",
-    "preset_civic_label": "Appreciation",
-    "preset_civic_prompt": "Walnut City Council appreciates the Volunteer Team for their selfless support during the rainstorm.",
+    "preset_corp_label": "Star Employee",
+    "preset_corp_prompt": "Employee of the Month award for Sarah Jenkins for her positive attitude and record-breaking sales in July.",    
+    "preset_course_label": "Workshop Class",
+    "preset_course_prompt": "Certificate of Completion for Mike Ross for finishing the 3-day 'Digital Photography Basics' workshop.",    
+    "preset_civic_label": "Community Event",
+    "preset_civic_prompt": "Appreciation award for the 'Green Park Cleanup Team' for their hard work and help this weekend.",
     "tip_label": "Pro Tip:",
     "tip_text": "Mention the \"Issuer\" and \"Date\" for best results.",
     "btn_loading": "Generating...",
@@ -468,7 +473,9 @@
     "feat_logo": "Custom Logo Upload",
     "feat_cloud": "Permanent Cloud Verification",
     "feat_badge": "Verified Business Badge",
-    "feat_bulk": "Bulk CSV Generation"
+    "feat_bulk": "Bulk CSV Generation",
+    "trial_badge": "60-Day Free Trial",
+    "trial_text": "$0.00 today. Cancel anytime."
   },
 "SaveModal": {
     "tab_single": "Single Certificate",
@@ -516,7 +523,7 @@
     "badge_verified": "Verified",
     "label_uid": "User ID",
     "sec_org": "Organization",
-    "label_org_name": "Org Name",
+    "label_org_name": "Organization / Business Name",
     "val_not_set": "Not Set",
     "label_ver_status": "Verification Status",
     "badge_biz_verified": "Verified Business",
@@ -531,15 +538,42 @@
     "val_addon": "Add-on",
     "label_auto": "Automation",
     "val_unlocked": "Unlocked",
-    "label_logo": "Custom Logo",
-    "btn_manage": "Manage Subscription"
+    "label_logo": "Logo",
+    "btn_manage": "Manage Subscription",
+    "label_website": "Website URL",
+    "label_linkedin": "LinkedIn Profile",
+    "label_google": "Google Business Maps",
+    "placeholder_https": "https://...",
+    "btn_save": "Save Changes",
+    "saved_success": "Profile updated successfully.",
+    "header_desc": "Manage your public issuer profile and verification proofs.",
+    "warning_unverified": "Your certificates will not display the \"Verified\" badge until you complete the verification request.",
+    "lock_msg": "Official organization names are locked to prevent impersonation. Contact support to change.",
+    "digital_title": "Digital Presence",
+    "digital_desc": "Provide links to help us verify your identity faster.",
+    
+    "// LOGO UPLOAD COMPONENT": "----------------",
+    "upload_alert_size": "File too large. Please upload an image smaller than {limit}MB.",
+    "upload_alert_type": "Invalid file type. Please upload an image (PNG, JPG, etc).",
+    "upload_alert_error": "Error uploading logo:",
+    "upload_btn_change": "Change",
+    "upload_helper": "Max size 2MB. Recommended 400x400px.",
+    "upload_alt": "Company Logo"
   },
 "Dashboard": {
-    "title": "Dashboard",
-    "subtitle": "Manage, search, and verify your issued credentials.",
-    "btn_issue": "Issue New Certificate",
-    "empty_title": "No Certificates Yet",
-    "empty_desc": "You haven't issued any credentials yet."
+    "title": "Certificate Dashboard",
+    "subtitle": "Manage and track your issued credentials.",
+    "btn_issue": "Issue New",
+    "table_recipient": "Recipient",
+    "table_date": "Date Issued",
+    "table_status": "Status",
+    "table_actions": "Actions",
+    "status_active": "Active",
+    "status_revoked": "Revoked",
+    "welcome_title": "Welcome to your Dashboard!",
+    "welcome_desc": "You are all set to start issuing verified credentials. Create your first certificate now or read our guide to learn more.",
+    "btn_create_first": "Create First Certificate",
+    "link_guide": "Read the Setup Guide"
   },
 "DashboardTable": {
     "search_placeholder": "Search recipients, titles, or IDs...",
