@@ -270,7 +270,7 @@ function PricingContent() {
            </div>
         </div>
 
-        {/* === TIER 3: INSTITUTIONAL (Elite) === */}
+  {/* === TIER 3: INSTITUTIONAL (Elite) === */}
         <div className={`
             p-8 rounded-lg border flex flex-col relative h-full transition-all duration-300
             ${isEliteHero
@@ -326,10 +326,10 @@ function PricingContent() {
             disabled={userTier !== 'pro' || loading !== null} 
             className={`w-full py-3 rounded font-bold text-center block text-sm transition-all
                 ${userTier === 'elite'
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200 cursor-default' // Current Active Style
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200 cursor-default' // Current Active Style (Light Blue)
                     : userTier === 'pro' 
-                        ? 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer shadow-sm hover:shadow' // Upgrade Style
-                        : 'bg-slate-100 text-slate-400 cursor-not-allowed' // Locked
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer' // Upgrade Style (Solid Blue) <--- CHANGED THIS
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed' // Locked (Gray)
                 }`}
           >
             {loading === 'elite' ? <Loader2 className="animate-spin mx-auto" /> : 
@@ -338,7 +338,6 @@ function PricingContent() {
             }
           </button>
         </div>
-
       </div>
     </div>
   );
