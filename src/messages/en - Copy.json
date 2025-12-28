@@ -8,13 +8,6 @@
     "success_link": "Return to Dashboard",
     "title": "Operational Sustainability",
     "subtitle": "OnlineCertificate.org is committed to open access. Basic verification is free forever.",
-    
-    "success_modal": {
-      "title": "Upgrade Successful!",
-      "message": "Welcome to the Institutional tier. Your account has been instantly upgraded.",
-      "btn_text": "Go to Dashboard"
-    },
-
     "tier_guest": {
       "name": "Public Access",
       "price": "$0",
@@ -25,7 +18,7 @@
       "feat_4": "Custom Logo Upload",
       "cta": "Access Generator"
     },
-    "tier_pro": {
+"tier_pro": {
       "badge": "Standard",
       "name": "Professional",
       "price": "$5",
@@ -56,22 +49,22 @@
       "feat_4": "Manual Verification",
       "cta_current": "Current Plan",
       "cta_upgrade": "Upgrade to Institutional",
-      "cta_locked": "Locked",
-      "cta_current_badge": "Current Plan"
-    },
-    "modal_upgrade": {
+      "cta_locked": "Locked"
+    
+  },
+"modal_upgrade": {
       "title": "Confirm Upgrade",
       "subtitle": "Move to the Elite Plan",
-      "warning_title": "Immediate Change",
-      "warning_desc": "This will end your current trial (if active) and charge your card immediately for the new plan.",
+      "warning_title": "Immediate Prorated Charge",
+      "warning_desc": "We will calculate the difference between Pro and Elite and charge your card on file immediately.",
       "btn_confirm": "Confirm & Upgrade",
       "btn_processing": "Processing...",
       "btn_cancel": "Cancel",
       "alert_success": "Upgrade Successful! You are now Elite.",
       "alert_error": "Something went wrong. Please try again.",
       "alert_connection": "Connection error. Please try again."
-    }
-  },
+}   
+ },
   "Contact": {
     "hero_title": "Get in Touch",
     "hero_desc": "Have questions about your certificates? Our support team is available to assist with verification and account inquiries.",

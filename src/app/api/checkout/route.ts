@@ -56,6 +56,7 @@ export async function POST(req: Request) {
                     price: targetPriceId, 
                 }],
                 billing_cycle_anchor: 'now',
+		trial_end: 'now',
                 proration_behavior: 'none', 
             });
 
