@@ -12,7 +12,7 @@ const supabase = createClient(
 );
 
 const BASE_URL = 'https://onlinecertificate.org';
-const LOCALES = ['en', 'es', 'zh']; // <--- Define your languages
+const LOCALES = ['en', 'es']; // <--- Define your languages
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   

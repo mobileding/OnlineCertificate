@@ -13,7 +13,7 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 
 const inter = Inter({ subsets: ["latin"] });
-const IS_PRODUCTION_READY = false;
+const IS_PRODUCTION_READY = true;
 
 export const metadata: Metadata = {
   title: 'OnlineCertificate.org',
