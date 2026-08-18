@@ -45,9 +45,9 @@ export async function POST(req: Request) {
       }
     `;
 
-    // 3. Attempt Generation (Gemini 2.0)
+    // 3. Attempt Generation (Gemini 3.1 Flash-Lite)
     const response = await genAI.models.generateContent({
-      model: "gemini-2.0-flash-lite", 
+      model: "gemini-3.1-flash-lite",
       contents: [{ parts: [{ text: systemInstruction + "\n\nUser Scenario: " + prompt }] }],
       // CONFIG: We keep thresholds relatively high to let the System Instruction handle the logic,
       // but we ensure severe content is blocked by the model layer.

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation"; // <--- 1. Import Router
 import { Sparkles, PenTool, Loader2 } from "lucide-react";
-import { generateSeoMissions } from "../app/actions/missions";
+import { generateSeoMissions } from "@/actions/missions";
 
 export function MissionGenerator() {
   const router = useRouter(); // <--- 2. Initialize Router

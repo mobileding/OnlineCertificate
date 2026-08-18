@@ -80,7 +80,7 @@ export async function generateSeoMissions(formData: FormData) {
     `;
 
     const response = await genAI.models.generateContent({
-      model: "gemini-2.0-flash-lite",
+model: "gemini-3.1-flash-lite",
       contents: [{ parts: [{ text: finalPrompt }] }],
       config: { responseMimeType: "application/json" } as any
     });
