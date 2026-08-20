@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { X, ChevronDown, LucideIcon } from "lucide-react";
 
+interface FaqItem {
+  question: string;
+  answer: string;
+}
+
 interface FeatureModalProps {
   isOpen: boolean;
   onClose: () => void;
