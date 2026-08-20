@@ -5,7 +5,7 @@ import { Link, useRouter } from "@/i18n/routing";
 import { usePathname } from "next/navigation"; 
 import { useLocale, useTranslations } from "next-intl"; 
 import { createBrowserClient } from "@supabase/ssr";
-import { User, LogOut, LayoutDashboard, Home, Mail, Settings } from "lucide-react";
+import { User, LogOut, LayoutDashboard, Home, Mail, Settings, LayoutTemplate, BookOpen } from "lucide-react";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import Image from "next/image";
 
@@ -105,6 +105,14 @@ export function Navigation() {
              </Link>
           )}
           
+          <Link href="/templates" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5">
+             <LayoutTemplate size={16} /> <span className="hidden sm:inline">{t('templates')}</span>
+          </Link>
+
+          <Link href="/blog" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5">
+             <BookOpen size={16} /> <span className="hidden sm:inline">{t('blog')}</span>
+          </Link>
+
           <Link href="/contact" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1.5">
              <Mail size={16} /> <span className="hidden sm:inline">{t('contact')}</span>
           </Link>

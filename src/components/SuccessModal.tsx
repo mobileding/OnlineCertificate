@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle, X, Download, Loader2, Layers, FileText } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { useEffect, useState, useRef } from "react";
 import confetti from "canvas-confetti"; 
 import JSZip from "jszip";

@@ -24,6 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const basePaths = [
     '',          // Homepage
     '/blog',     
+    '/templates',
     '/login',    
     '/pricing',  
   ];

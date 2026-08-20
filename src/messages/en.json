@@ -230,7 +230,7 @@
 "GeneratorHero": {
     "title_1": "AI-Written.",
     "title_2": "Instantly Verified.",
-    "subtitle": "Generate <strong_tag>free, verifiable certificates</strong_tag> with AI in seconds. Every award includes a secure <strong_tag>QR code</strong_tag> and is stored permanently in the cloud.",
+    "subtitle": "Generate <free_tag>free</free_tag>, <verifiable_tag>verifiable certificates</verifiable_tag> with AI in seconds. Every award includes a secure <qr_tag>QR code</qr_tag> and is stored permanently in the cloud.",
     "placeholder": "e.g. A certificate for John Doe for winning the 2025 Science Fair...",
     "label_switch": "Switch Preset:",
     "label_try": "Try a preset:",
@@ -244,7 +244,24 @@
     "tip_text": "Mention the \"Issuer\" and \"Date\" for best results.",
     "btn_loading": "Generating...",
     "btn_generate": "Generate Certificate",
-    "error_label": "Error:"
+    "error_label": "Error:",
+    "badge_free": "100% Free",
+    "badge_verifiable": "Verifiable Certificate",
+    "badge_qr": "QR Code Included",
+    "modal_free": {
+      "title": "100% Free to Start",
+      "desc": "OnlineCertificate.org is committed to keeping digital credentials accessible. Basic verification is free forever. Paid tiers support our server costs and storage permanence.",
+      "faq_1_q": "Is this really free?",
+      "faq_1_a": "Yes! You can design and download unlimited single certificates for free. We only charge for advanced features like uploading your own logo, bulk CSV generation, and dashboard storage.",
+      "faq_2_q": "How does verification work?",
+      "faq_2_a": "Every certificate gets a unique ID. Anyone can scan the QR code or enter the ID on our Verify page to confirm it matches our records.",
+      "faq_3_q": "What is the difference between Pro and Elite?",
+      "faq_3_a": "Pro ($6) is great for businesses needing logos and bulk creation. Elite ($22) adds Manual Verification (LinkedIn/Google) and the ability to email certificates directly to recipients."
+    },
+    "modal_qr": {
+      "title": "QR Code Included",
+      "desc": "Each certificate includes a scannable QR code linked directly to its verification page, so authenticity can be checked instantly from a printed copy or a phone screen."
+    }
   },
 "TemplateGallery": {
     "title": "Designed to Impress.",
@@ -606,11 +623,21 @@
   },
 "Navigation": {
     "home": "Home",
+    "templates": "Templates",
+    "blog": "Blog",
     "contact": "Contact",
     "dashboard": "Dashboard",
     "profile": "Profile",
     "logout": "Logout",
     "signin": "Sign In"
+  },
+"Templates": {
+    "meta_title": "Free Certificate Templates | OnlineCertificate.org",
+    "meta_desc": "Browse our library of free, ready-to-use certificate templates — from employee awards to course completions. Customize and generate instantly.",
+    "title": "Certificate Templates",
+    "subtitle": "Browse ready-made templates for any occasion. Pick one to customize, or start from scratch.",
+    "empty_state": "No templates available yet — check back soon.",
+    "cta_use": "Use this template"
   },
 "Footer": {
     "rights": "All rights reserved.",
@@ -621,19 +648,56 @@
   },
 "Login": {
     "title": "Welcome Back",
-    "subtitle_pwd": "Sign in with your password",
-    "subtitle_magic": "Sign in via Magic Link",
-    "success_title": "Check your inbox",
-    "success_desc": "We sent a login link to <br/> <b>{email}</b>",
-    "btn_back": "Use a different email",
+    "subtitle_pwd": "Sign in to your account",
     "label_email": "Email",
     "label_password": "Password",
-    "btn_signin_pwd": "Sign In with Password",
-    "btn_signin_magic": "Send Magic Link",
-    "toggle_magic": "I want to use a magic link instead",
-    "toggle_pwd": "I have a password, let me use it",
+    "btn_signin_pwd": "Sign In",
+    "err_email_required": "Please enter your email and password",
+    "forgot_pwd_link": "Forgot your password?",
+    "btn_google": "Continue with Google",
+    "divider_or": "OR",
+    "no_account": "Don't have an account?",
+    "link_signup": "Sign Up"
+  },
+"ForgotPassword": {
+    "title": "Reset your password",
+    "subtitle": "Enter your email and we'll send you a reset link",
+    "label_email": "Email",
+    "btn_send": "Send Reset Link",
     "err_email_required": "Please enter your email",
-    "msg_magic_sent": "Magic link sent! Check your email."
+    "success_title": "Check your inbox",
+    "success_desc": "We sent a password reset link to <br/> <b>{email}</b>",
+    "btn_back": "Use a different email",
+    "back_to_login": "Back to login"
+  },
+"ResetPassword": {
+    "title": "Set a new password",
+    "subtitle": "Choose a new password for your account",
+    "label_password": "New Password",
+    "label_confirm": "Confirm Password",
+    "btn_update": "Update Password",
+    "err_too_short": "Password must be at least 6 characters.",
+    "err_mismatch": "Passwords do not match.",
+    "success_title": "Password updated",
+    "success_desc": "Your password has been changed successfully.",
+    "btn_continue": "Continue to Dashboard",
+    "err_invalid_session": "This reset link is invalid or has expired. Please request a new one."
+  },
+"Signup": {
+    "title": "Create Account",
+    "subtitle": "Start issuing verified certificates today",
+    "label_email": "Email",
+    "label_password": "Password",
+    "label_password_placeholder": "Create a password",
+    "btn_google": "Continue with Google",
+    "divider_or": "OR",
+    "btn_create": "Create Account",
+    "success_title": "Check your inbox",
+    "success_desc": "We've sent a confirmation link to <b>{email}</b>. Please click the link to activate your account.",
+    "back_to_login": "Back to Sign In",
+    "msg_account_created": "Account created! Please check your email.",
+    "err_already_registered": "This email is already registered. Please log in instead.",
+    "link_login": "Log In",
+    "already_account": "Already have an account?"
   }
-}
 }

@@ -206,7 +206,7 @@
   "GeneratorHero": {
     "title_1": "Escrito por IA.",
     "title_2": "Verificado al Instante.",
-    "subtitle": "Genera <strong_tag>certificados gratuitos y verificables</strong_tag> con IA en segundos. Cada premio incluye un <strong_tag>código QR</strong_tag> seguro y se almacena permanentemente en la nube.",
+    "subtitle": "Genera certificados <free_tag>gratuitos</free_tag> y <verifiable_tag>verificables</verifiable_tag> con IA en segundos. Cada premio incluye un <qr_tag>código QR</qr_tag> seguro y se almacena permanentemente en la nube.",
     "placeholder": "ej. Un certificado para Juan Pérez por ganar la Feria de Ciencias 2025...",
     "label_switch": "Cambiar Preset:",
     "label_try": "Prueba un preset:",
@@ -220,7 +220,24 @@
     "tip_text": "Menciona el \"Emisor\" y la \"Fecha\" para mejores resultados.",
     "btn_loading": "Generando...",
     "btn_generate": "Generar Certificado",
-    "error_label": "Error:"
+    "error_label": "Error:",
+    "badge_free": "100% Gratis",
+    "badge_verifiable": "Certificado Verificable",
+    "badge_qr": "Código QR Incluido",
+    "modal_free": {
+      "title": "100% Gratis para Empezar",
+      "desc": "OnlineCertificate.org está comprometido a mantener las credenciales digitales accesibles. La verificación básica es gratuita para siempre. Los planes de pago cubren nuestros costos de servidor y almacenamiento permanente.",
+      "faq_1_q": "¿Esto es realmente gratis?",
+      "faq_1_a": "¡Sí! Puedes diseñar y descargar certificados individuales ilimitados de forma gratuita. Solo cobramos por funciones avanzadas como subir tu propio logo, generación masiva por CSV y almacenamiento en el panel.",
+      "faq_2_q": "¿Cómo funciona la verificación?",
+      "faq_2_a": "Cada certificado obtiene un ID único. Cualquiera puede escanear el código QR o ingresar el ID en nuestra página de Verificación para confirmar que coincide con nuestros registros.",
+      "faq_3_q": "¿Cuál es la diferencia entre Pro y Elite?",
+      "faq_3_a": "Pro ($6) es ideal para negocios que necesitan logos y creación masiva. Elite ($22) agrega Verificación Manual (LinkedIn/Google) y la posibilidad de enviar certificados por correo directamente a los destinatarios."
+    },
+    "modal_qr": {
+      "title": "Código QR Incluido",
+      "desc": "Cada certificado incluye un código QR escaneable vinculado directamente a su página de verificación, para que la autenticidad pueda comprobarse al instante desde una copia impresa o una pantalla de teléfono."
+    }
   },
   "TemplateGallery": {
     "title": "Diseñado para Impresionar.",
@@ -551,11 +568,21 @@
   },
   "Navigation": {
     "home": "Inicio",
+    "templates": "Plantillas",
+    "blog": "Blog",
     "contact": "Contacto",
     "dashboard": "Panel",
     "profile": "Perfil",
     "logout": "Cerrar Sesión",
     "signin": "Iniciar Sesión"
+  },
+  "Templates": {
+    "meta_title": "Plantillas de Certificados Gratis | OnlineCertificate.org",
+    "meta_desc": "Explora nuestra biblioteca de plantillas de certificados gratuitas y listas para usar — desde premios de empleados hasta finalización de cursos. Personaliza y genera al instante.",
+    "title": "Plantillas de Certificados",
+    "subtitle": "Explora plantillas listas para cualquier ocasión. Elige una para personalizar, o empieza desde cero.",
+    "empty_state": "Aún no hay plantillas disponibles — vuelve pronto.",
+    "cta_use": "Usar esta plantilla"
   },
   "Footer": {
     "rights": "Todos los derechos reservados.",
@@ -566,18 +593,56 @@
   },
 "Login": {
     "title": "Bienvenido de nuevo",
-    "subtitle_pwd": "Inicia sesión con tu contraseña",
-    "subtitle_magic": "Inicia sesión vía Magic Link",
-    "success_title": "Revisa tu bandeja de entrada",
-    "success_desc": "Enviamos un enlace de acceso a <br/> <b>{email}</b>",
-    "btn_back": "Usar un correo diferente",
+    "subtitle_pwd": "Inicia sesión en tu cuenta",
     "label_email": "Correo",
     "label_password": "Contraseña",
-    "btn_signin_pwd": "Entrar con Contraseña",
-    "btn_signin_magic": "Enviar Magic Link",
-    "toggle_magic": "Prefiero usar un enlace mágico",
-    "toggle_pwd": "Tengo contraseña, déjame usarla",
+    "btn_signin_pwd": "Iniciar Sesión",
+    "err_email_required": "Por favor ingresa tu correo y contraseña",
+    "forgot_pwd_link": "¿Olvidaste tu contraseña?",
+    "btn_google": "Continuar con Google",
+    "divider_or": "O",
+    "no_account": "¿No tienes una cuenta?",
+    "link_signup": "Regístrate"
+  },
+"ForgotPassword": {
+    "title": "Restablece tu contraseña",
+    "subtitle": "Ingresa tu correo y te enviaremos un enlace de restablecimiento",
+    "label_email": "Correo",
+    "btn_send": "Enviar Enlace",
     "err_email_required": "Por favor ingresa tu correo",
-    "msg_magic_sent": "¡Enlace enviado! Revisa tu correo."
+    "success_title": "Revisa tu correo",
+    "success_desc": "Enviamos un enlace de restablecimiento a <br/> <b>{email}</b>",
+    "btn_back": "Usar otro correo",
+    "back_to_login": "Volver al inicio de sesión"
+  },
+"ResetPassword": {
+    "title": "Establece una nueva contraseña",
+    "subtitle": "Elige una nueva contraseña para tu cuenta",
+    "label_password": "Nueva Contraseña",
+    "label_confirm": "Confirmar Contraseña",
+    "btn_update": "Actualizar Contraseña",
+    "err_too_short": "La contraseña debe tener al menos 6 caracteres.",
+    "err_mismatch": "Las contraseñas no coinciden.",
+    "success_title": "Contraseña actualizada",
+    "success_desc": "Tu contraseña ha sido cambiada exitosamente.",
+    "btn_continue": "Continuar al Panel",
+    "err_invalid_session": "Este enlace de restablecimiento no es válido o ha expirado. Por favor solicita uno nuevo."
+  },
+"Signup": {
+    "title": "Crear Cuenta",
+    "subtitle": "Comienza a emitir certificados verificados hoy",
+    "label_email": "Correo",
+    "label_password": "Contraseña",
+    "label_password_placeholder": "Crea una contraseña",
+    "btn_google": "Continuar con Google",
+    "divider_or": "O",
+    "btn_create": "Crear Cuenta",
+    "success_title": "Revisa tu correo",
+    "success_desc": "Enviamos un enlace de confirmación a <b>{email}</b>. Haz clic en el enlace para activar tu cuenta.",
+    "back_to_login": "Volver al inicio de sesión",
+    "msg_account_created": "¡Cuenta creada! Por favor revisa tu correo.",
+    "err_already_registered": "Este correo ya está registrado. Por favor inicia sesión.",
+    "link_login": "Iniciar Sesión",
+    "already_account": "¿Ya tienes una cuenta?"
   }
 }
